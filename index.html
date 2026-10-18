@@ -137,8 +137,8 @@ var ZD=['零','一','二','三','四','五','六','七','八','九'];
 function zhNum(n){ /* 一般唸法：10 十、12 十二、20 二十、81 八十一 */
   if(n<10)return ZD[n];if(n<20)return '十'+(n%10?ZD[n%10]:'');
   return ZD[Math.floor(n/10)]+'十'+(n%10?ZD[n%10]:'')}
-function kj(a,b){ /* 口訣：積小於 10 加「得」；積等於 10 唸「一十」；其餘照一般唸法 */
-  var p=a*b;if(p<10)return ZD[a]+ZD[b]+'得'+ZD[p];
+function kj(a,b){ /* 口訣（不加「得」）：二二四、二三六；積等於 10 唸「一十」；其餘照一般唸法 */
+  var p=a*b;if(p<10)return ZD[a]+ZD[b]+ZD[p];
   return ZD[a]+ZD[b]+(p===10?'一十':zhNum(p))}
 function eqSpeech(a,b,ask){return zhNum(a)+'乘以'+zhNum(b)+(ask?'等於多少？':'等於'+zhNum(a*b))}
 
@@ -162,7 +162,7 @@ function hush(){spSeq++;auSeq++;try{speechSynthesis.cancel()}catch(e){}if(AU){AU
 
 /* ---------- 預錄音檔（神經語音）：優先播放，沒有就退回 iPad 內建語音 ---------- */
 var VOICES={hy:'🎀 活潑女生（曉雨）',hc:'🌸 溫柔姐姐（曉臻）',sys:'📱 iPad 內建語音'};
-var VCACHE='times-voice-v1',AU=null,auSeq=0,unlocked=false;
+var VCACHE='times-voice-v2',AU=null,auSeq=0,unlocked=false;
 function curVoice(){return VOICES[D.voice]?D.voice:'hy'}
 function auInit(){if(AU)return AU;try{AU=new Audio();AU.preload='auto';AU.preservesPitch=true;AU.webkitPreservesPitch=true}catch(e){AU=null}return AU}
 function unlock(){if(unlocked)return;var a=auInit();if(!a)return;unlocked=true; /* iOS：第一次觸控時先播一段無聲音檔，之後程式才能自己播放 */
@@ -194,7 +194,7 @@ function E(a,b){return ['e'+a+b,eqSpeech(a,b)]}
 function Q(a,b){return ['q'+a+b,eqSpeech(a,b,true)]}
 function M(a,b){return [a>1?'m'+a+b:'',zhNum(a)+'乘以多少等於'+zhNum(a*b)+'？']}
 function P(a){return ['p'+a,'每次加'+zhNum(a)]}
-var CL={ok1:'答對了！',ok2:'好棒！',ok3:'太厲害了！',try1:'再試一次！',try2:'差一點點，再想想看！',great:'好棒喔！全部都答對了！',record:'哇！新紀錄！',timeup:'時間到！',fly:'飛吧！',test:'二二得四，三四十二，二五一十，九九八十一'};
+var CL={ok1:'答對了！',ok2:'好棒！',ok3:'太厲害了！',try1:'再試一次！',try2:'差一點點，再想想看！',great:'好棒喔！全部都答對了！',record:'哇！新紀錄！',timeup:'時間到！',fly:'飛吧！',test:'二二四，三四十二，二五一十，九九八十一'};
 function C(k){return [k,CL[k]]}
 function voiceKeys(){var o=[];for(var a=1;a<=9;a++){o.push('p'+a);for(var b=1;b<=9;b++){o.push('k'+a+b,'e'+a+b,'q'+a+b);if(a>1)o.push('m'+a+b)}}return o.concat(Object.keys(CL))}
 /* 把選定的音色全部存到 iPad（離線可用）；已存過的會跳過 */
@@ -202,8 +202,8 @@ var vcBusy={};
 function voicePrefetch(v,cb){if(v==='sys'||vcBusy[v]||!window.caches||!window.fetch)return;vcBusy[v]=1;
   caches.open(VCACHE).then(function(c){var ks=voiceKeys(),i=0,bad=0,done=0;
     function one(){if(i>=ks.length)return Promise.resolve();var u='voice/'+v+'/'+ks[i++]+'.mp3';
-      return c.match(u).then(function(r){return r||c.add(u)}).catch(function(){bad++}).then(function(){done++;return one()})}
-    return Promise.all([one(),one(),one(),one()]).then(function(){vcBusy[v]=0;if(!bad){D.vc=D.vc||{};D.vc[v]=1;save()}if(cb)cb(!bad)})}).catch(function(){vcBusy[v]=0})}
+      return c.match(u).then(function(r){return r||c.add(new Request(u,{cache:'reload'}))}).catch(function(){bad++}).then(function(){done++;return one()})}
+    return Promise.all([one(),one(),one(),one()]).then(function(){vcBusy[v]=0;if(!bad){D.vc=D.vc||{};D.vc[v+'@'+VCACHE]=1;save()}if(cb)cb(!bad)})}).catch(function(){vcBusy[v]=0})}
 
 /* ---------- 音效 ---------- */
 var AC=null;
@@ -266,7 +266,7 @@ function learn(){
   '<button class="btn small blue" data-a="lnext">👉 下一行</button>'+
   '<button class="btn small yellow" data-a="lall">👀 全部顯示</button>'+
   '<button class="btn small gray" data-a="lreset">🔄 蓋起來重背</button></div>'+
-  '<div class="chips"><button class="chip wide'+(D.learnMode==='kj'?' on':'')+'" data-a="lmode" data-m="kj">唸口訣（二三得六）</button>'+
+  '<div class="chips"><button class="chip wide'+(D.learnMode==='kj'?' on':'')+'" data-a="lmode" data-m="kj">唸口訣（二三六）</button>'+
   '<button class="chip wide'+(D.learnMode==='eq'?' on':'')+'" data-a="lmode" data-m="eq">唸算式（二乘以三等於六）</button>'+
   '<button class="chip wide'+(D.slow?' on':'')+'" data-a="lslow">🐢 慢慢唸</button></div>'+
   '<div class="mid" style="font-size:18px">點任何一行就會唸給你聽</div><div id="lrows">';
@@ -579,7 +579,7 @@ function heat(settings){
   h+='<div class="card"><b>⏱️ 60 秒挑戰最佳紀錄</b><div style="font-size:22px;margin-top:8px">'+(bk.length?bk.map(function(k){return esc(selName(k.split('').map(Number)))+'：'+D.best[k]+' 題'}).join('<br>'):'還沒有紀錄')+'</div></div>';
   h+='<div class="card" id="settings"><b>⚙️ 家長設定</b>'+
   '<div class="set" style="border:0"><b>🗣️ 聲音</b>（點一下就會試聽）<div class="chips" style="justify-content:flex-start">'+Object.keys(VOICES).map(function(k){return '<button class="chip wide'+(curVoice()===k?' on':'')+'" data-a="voice" data-v="'+k+'">'+VOICES[k]+'</button>'}).join('')+'</div>'+
-  '<div style="font-size:16px;color:#8e8aa5">'+(curVoice()==='sys'?'使用 iPad 內建語音（設定 → 輔助使用 → 朗讀內容 → 聲音 → 中文（台灣）可以下載「美佳（增強）」等較自然的聲音）':(D.vc&&D.vc[curVoice()]?'✅ 這個聲音已存到 iPad，可以離線使用':'⏳ 正在把這個聲音存到 iPad（需連網，約 2～3 MB）；還沒存好時離線會改用 iPad 內建語音'))+'</div></div>'+
+  '<div style="font-size:16px;color:#8e8aa5">'+(curVoice()==='sys'?'使用 iPad 內建語音（設定 → 輔助使用 → 朗讀內容 → 聲音 → 中文（台灣）可以下載「美佳（增強）」等較自然的聲音）':(D.vc&&D.vc[curVoice()+'@'+VCACHE]?'✅ 這個聲音已存到 iPad，可以離線使用':'⏳ 正在把這個聲音存到 iPad（需連網，約 2～3 MB）；還沒存好時離線會改用 iPad 內建語音'))+'</div></div>'+
   '<label class="set"><input type="checkbox" id="s_slow"'+(D.slow?' checked':'')+'>🐢 慢速朗讀</label>'+
   '<label class="set"><input type="checkbox" id="s_auto"'+(D.autoSay!==false?' checked':'')+'>🔊 出題時自動唸題目</label>'+
   '<label class="set"><input type="checkbox" id="s_sound"'+(D.sound!==false?' checked':'')+'>🎵 音效</label>'+
