@@ -110,7 +110,7 @@ function now(){return Date.now()}
 
 /* ---------- 資料 ---------- */
 var D;
-function blank(){return {v:1,stars:0,stats:{},best:{},sel:[2,3,4,5,6,7,8,9],slow:false,autoSay:true,sound:true,hwOcr:true,penOnly:false,learnA:2,learnMode:'kj'}}
+function blank(){return {v:1,stars:0,stats:{},best:{},sel:[2,3,4,5,6,7,8,9],slow:false,autoSay:true,sound:true,hwOcr:true,penOnly:false,learnA:2,learnMode:'kj',voice:'hy',vc:{}}}
 function load(){var b=blank(),o=null;try{o=JSON.parse(localStorage.getItem(KEY))}catch(e){}
   D=(o&&typeof o==='object')?o:b;for(var k in b)if(D[k]===undefined)D[k]=b[k];
   if(!Array.isArray(D.sel)||!D.sel.length)D.sel=b.sel.slice();
@@ -158,7 +158,52 @@ function sayZh(text,slow,done){
     u.onend=fin;u.onerror=fin;speechSynthesis.speak(u)}catch(e){fin();return}
   g=setTimeout(fin,1400+text.length*((D.slow||slow)?420:260)); /* 部分裝置 onend 不觸發的保險 */
 }
-function hush(){spSeq++;try{speechSynthesis.cancel()}catch(e){}}
+function hush(){spSeq++;auSeq++;try{speechSynthesis.cancel()}catch(e){}if(AU){AU.onended=AU.onerror=AU.onloadedmetadata=null;try{AU.pause()}catch(e){}}}
+
+/* ---------- 預錄音檔（神經語音）：優先播放，沒有就退回 iPad 內建語音 ---------- */
+var VOICES={hy:'🎀 活潑女生（曉雨）',hc:'🌸 溫柔姐姐（曉臻）',sys:'📱 iPad 內建語音'};
+var VCACHE='times-voice-v1',AU=null,auSeq=0,unlocked=false;
+function curVoice(){return VOICES[D.voice]?D.voice:'hy'}
+function auInit(){if(AU)return AU;try{AU=new Audio();AU.preload='auto';AU.preservesPitch=true;AU.webkitPreservesPitch=true}catch(e){AU=null}return AU}
+function unlock(){if(unlocked)return;var a=auInit();if(!a)return;unlocked=true; /* iOS：第一次觸控時先播一段無聲音檔，之後程式才能自己播放 */
+  try{a.src='voice/silence.mp3';var pr=a.play();if(pr&&pr.catch)pr.catch(function(e){if(e&&e.name==='NotAllowedError')unlocked=false})}catch(e){unlocked=false}}
+document.addEventListener('touchend',unlock,true);document.addEventListener('click',unlock,true);
+function speak(key,text,done,slow){
+  hush();var v=curVoice();
+  if(v==='sys'||!key||!auInit()){sayZh(text,slow,done);return}
+  var my=auSeq,a=AU,fired=false,g,r=(D.slow||slow)?0.75:1;
+  function off(){clearTimeout(g);a.onended=a.onerror=a.onloadedmetadata=null}
+  function fin(){if(fired||my!==auSeq)return;fired=true;off();if(done)setTimeout(function(){if(my===auSeq)done()},180)}
+  function fb(){if(fired||my!==auSeq)return;fired=true;off();sayZh(text,slow,done)} /* 音檔不能播：改用內建語音 */
+  g=setTimeout(fb,6000);
+  blobUrl('voice/'+v+'/'+key+'.mp3').then(function(u){if(fired||my!==auSeq)return;
+    a.onended=fin;a.onerror=fb;
+    a.onloadedmetadata=function(){clearTimeout(g);g=setTimeout(fin,((isFinite(a.duration)&&a.duration)||4)/r*1000+1500)};
+    a.src=u;a.defaultPlaybackRate=r;a.playbackRate=r;var pr=a.play();
+    if(pr&&pr.catch)pr.catch(function(e){if(e&&e.name==='AbortError')return;fb()})}).catch(fb)}
+/* 先把音檔讀成 Blob 再播：避開 iOS 對離線快取音訊的 Range 要求問題，也比較快 */
+var BU={},BUk=[];
+function blobUrl(u){if(BU[u])return Promise.resolve(BU[u]);
+  return fetch(u).then(function(r){if(!r.ok)throw new Error('http');return r.blob()}).then(function(b){if(!b.size)throw new Error('empty');
+    var x=URL.createObjectURL(b.type?b:new Blob([b],{type:'audio/mpeg'}));BU[u]=x;BUk.push(u);
+    if(BUk.length>80){var o=BUk.shift();try{URL.revokeObjectURL(BU[o])}catch(e){}delete BU[o]}return x})}
+function sp(pair,done,slow){speak(pair[0],pair[1],done,slow)}
+function speakSeq(list,done){var i=0;(function nx(){if(i>=list.length){if(done)done();return}sp(list[i++],nx)})()}
+function K(a,b){return ['k'+a+b,kj(a,b)]}
+function E(a,b){return ['e'+a+b,eqSpeech(a,b)]}
+function Q(a,b){return ['q'+a+b,eqSpeech(a,b,true)]}
+function M(a,b){return [a>1?'m'+a+b:'',zhNum(a)+'乘以多少等於'+zhNum(a*b)+'？']}
+function P(a){return ['p'+a,'每次加'+zhNum(a)]}
+var CL={ok1:'答對了！',ok2:'好棒！',ok3:'太厲害了！',try1:'再試一次！',try2:'差一點點，再想想看！',great:'好棒喔！全部都答對了！',record:'哇！新紀錄！',timeup:'時間到！',fly:'飛吧！',test:'二二得四，三四十二，二五一十，九九八十一'};
+function C(k){return [k,CL[k]]}
+function voiceKeys(){var o=[];for(var a=1;a<=9;a++){o.push('p'+a);for(var b=1;b<=9;b++){o.push('k'+a+b,'e'+a+b,'q'+a+b);if(a>1)o.push('m'+a+b)}}return o.concat(Object.keys(CL))}
+/* 把選定的音色全部存到 iPad（離線可用）；已存過的會跳過 */
+var vcBusy={};
+function voicePrefetch(v,cb){if(v==='sys'||vcBusy[v]||!window.caches||!window.fetch)return;vcBusy[v]=1;
+  caches.open(VCACHE).then(function(c){var ks=voiceKeys(),i=0,bad=0,done=0;
+    function one(){if(i>=ks.length)return Promise.resolve();var u='voice/'+v+'/'+ks[i++]+'.mp3';
+      return c.match(u).then(function(r){return r||c.add(u)}).catch(function(){bad++}).then(function(){done++;return one()})}
+    return Promise.all([one(),one(),one(),one()]).then(function(){vcBusy[v]=0;if(!bad){D.vc=D.vc||{};D.vc[v]=1;save()}if(cb)cb(!bad)})}).catch(function(){vcBusy[v]=0})}
 
 /* ---------- 音效 ---------- */
 var AC=null;
@@ -231,7 +276,7 @@ function lText(a,b){return D.learnMode==='eq'?eqSpeech(a,b):kj(a,b)}
 function lSay(b,done){var a=D.learnA;L.cur=b;if(b>L.shown)L.shown=b;
   var rows=document.querySelectorAll('.lrow');for(var i=0;i<rows.length;i++){rows[i].classList.toggle('cur',i+1===b);rows[i].classList.toggle('hide',i+1>L.shown)}
   var el=rows[b-1];if(el&&el.scrollIntoView&&L.play)try{el.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){}
-  sayZh(lText(a,b),false,done)}
+  sp(D.learnMode==='eq'?E(a,b):K(a,b),done)}
 function lPlay(){if(L.play){L.play=false;hush();learn();return}
   L.play=true;L.shown=0;learn();var b=1;
   (function step(){if(!L.play||view!=='learn')return;if(b>9){L.play=false;L.cur=0;learn();sndWin();confetti(60);return}lSay(b++,step)})()}
@@ -298,12 +343,12 @@ function quizQ(){
     G.opts=shuffle([p].concat(distract(a,b)));
     h+='<div class="mid">選出正確答案 '+sayBtn()+'</div><div class="q">'+a+' × '+b+' = <span class="box" id="ans">?</span></div><div class="hint" id="hint"></div>'+
     '<div class="opts">'+G.opts.map(function(o,i){return '<button class="opt" data-a="ans" data-i="'+i+'">'+o+'</button>'}).join('')+'</div><div class="msg" id="msg"></div>';
-    app.innerHTML=h;autoSay(eqSpeech(a,b,true));
+    app.innerHTML=h;autoSay(Q(a,b));
   }else if(t==='fill'){
     G.miss=Math.random()<0.2&&a>1; /* 偶爾挖掉乘數：3 × ? = 12 */
     G.target=G.miss?b:p;G.inp='';
     h+='<div class="mid">'+(G.miss?'空格裡是多少？':'用數字鍵盤寫答案')+' '+sayBtn()+'</div><div class="q" id="qline"></div><div class="hint" id="hint"></div>'+padHtml()+'<div class="msg" id="msg"></div>';
-    app.innerHTML=h;fillDraw();autoSay(G.miss?zhNum(a)+'乘以多少等於'+zhNum(p)+'？':eqSpeech(a,b,true));
+    app.innerHTML=h;fillDraw();autoSay(G.miss?M(a,b):Q(a,b));
   }else if(t==='pattern'){
     var lo=Math.max(1,b-4),hi=Math.min(b,5),st=lo+rnd(hi-lo+1);
     G.seq=[];for(var k=st;k<st+5;k++)G.seq.push(k);
@@ -314,9 +359,9 @@ function quizQ(){
     app.innerHTML=h;
   }else if(t==='write'){hwInit()}
 }
-function autoSay(t){if(D.autoSay!==false)setTimeout(function(){if(view==='quiz')sayZh(t)},250)}
+function autoSay(pr){if(D.autoSay!==false)setTimeout(function(){if(view==='quiz')sp(pr)},250)}
 function qSay(){var t=G&&G.types[G.i],f=G&&G.f;if(!f)return;
-  if(t==='fill'&&G.miss)sayZh(zhNum(f.a)+'乘以多少等於'+zhNum(f.a*f.b)+'？');else if(t==='pattern')sayZh('每次加'+zhNum(f.a));else sayZh(eqSpeech(f.a,f.b,true))}
+  if(t==='fill'&&G.miss)sp(M(f.a,f.b));else if(t==='pattern')sp(P(f.a));else sp(Q(f.a,f.b))}
 function padHtml(){var k='';[1,2,3,4,5,6,7,8,9].forEach(function(n){k+='<button class="key" data-a="key" data-k="'+n+'">'+n+'</button>'});
   return '<div class="pad">'+k+'<button class="key del" data-a="key" data-k="del">⌫</button><button class="key" data-a="key" data-k="0">0</button><button class="key ok" data-a="key" data-k="ok">✔</button></div>'}
 function fillDraw(okState){var f=G.f,box='<span class="box'+(okState?' ok':'')+'">'+(G.inp||'&nbsp;')+'</span>';
@@ -325,14 +370,16 @@ function showHint(){var f=G.f,el=$('#hint');if(!el)return;
   var t=G.types[G.i];
   el.textContent=t==='pattern'?'提示：每次多 '+f.a+' 喔！':'💡 口訣：'+kj(f.a,f.b);
   el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
-  sayZh(t==='pattern'?'每次加'+zhNum(f.a):kj(f.a,f.b))}
+  speakSeq([C(G.tried>1?'try2':'try1'),t==='pattern'?P(f.a):K(f.a,f.b)])}
 function wrongOnce(){if(!G.tried){rec(G.f.a,G.f.b,false);G.requeue.push({f:G.f,at:G.i+3})}G.tried++}
 function right(){
   var first=!G.tried,ms=now()-G.t0;
   if(first){rec(G.f.a,G.f.b,true,ms);G.first++;G.gained++;D.stars++;save()}
-  sndOk();confetti(first?70:30);var m=$('#msg');if(m){m.textContent=praise();m.classList.add('pop')}
-  var t=G.types[G.i],f=G.f;sayZh(kj(f.a,f.b));
-  G.i++;setTimeout(function(){if(view==='quiz'&&G)quizQ()},1700)}
+  sndOk();confetti(first?70:30);var pw=praise(),m=$('#msg');if(m){m.textContent=pw;m.classList.add('pop')}
+  var f=G.f,g=G,list=[K(f.a,f.b)];if(/^飛吧/.test(pw))list.unshift(C('fly'));else if(first&&Math.random()<0.35)list.unshift(C(['ok1','ok2','ok3'][rnd(3)]));
+  G.i++;var t0=now(),gone=false;function nx(){if(gone)return;gone=true;if(view==='quiz'&&G===g)quizQ()}
+  setTimeout(function(){if(view==='quiz'&&G===g)speakSeq(list,function(){setTimeout(nx,Math.max(250,1300-(now()-t0)))})},300);
+  setTimeout(nx,5500)}
 function onAns(i){if(G.locked)return;var o=G.opts[i],btn=document.querySelectorAll('.opt')[i];
   if(o===G.f.a*G.f.b){G.locked=true;btn.classList.add('ok');var an=$('#ans');if(an){an.textContent=o;an.classList.add('ok')}right()}
   else{sndNo();btn.classList.add('no');btn.style.pointerEvents='none';wrongOnce();$('#msg').textContent=tryag();showHint()}}
@@ -359,14 +406,14 @@ function onFlip(i){var m=G.m,c=m.cards[i];if(G.locked||c.done||m.open.indexOf(i)
   if(m.open.length===2){var a=m.cards[m.open[0]],b=m.cards[m.open[1]];G.locked=true;
     if(a.id===b.id){a.done=b.done=true;m.done++;m.open=[];
       if(!m.bad[a.id]){rec(a.f.a,a.f.b,true);D.stars++;G.gained++;save()}
-      sndOk();confetti(30);G.locked=false;matchDraw();$('#msg').textContent=praise();sayZh(kj(a.f.a,a.f.b));
+      sndOk();confetti(30);G.locked=false;matchDraw();$('#msg').textContent=praise();sp(K(a.f.a,a.f.b));
       if(m.done===m.total){G.locked=true;G.first++;G.i++;sndWin();confetti(100);setTimeout(function(){if(view==='quiz')quizQ()},1800)}}
     else{sndNo();[a,b].forEach(function(x){if(x.side==='eq'&&!m.bad[x.id]){m.bad[x.id]=1;rec(x.f.a,x.f.b,false)}});
       $('#msg').textContent=tryag();setTimeout(function(){m.open=[];G.locked=false;if(view==='quiz')matchDraw()},900)}}}
 
 function finish(){var n=G.types.length,bonus=0;
   if(G.first===n&&n>=3){bonus=3;D.stars+=3;G.gained+=3}
-  save();view='result';sndWin();confetti(160);render()}
+  save();view='result';sndWin();confetti(160);render();var pp=G.first/n;setTimeout(function(){if(view==='result')sp(C(pp===1?'great':pp>=.6?'ok3':'try1'))},900)}
 function result(){var n=G.types.length,p=G.first/n,face=p>=.9?'🏆':p>=.6?'🎉':'💪';
   app.innerHTML=topbar(false)+'<div class="hero pop">'+face+'</div><h1>'+(p>=.9?'太厲害了！':p>=.6?'表現很棒！':'再接再厲！')+'</h1>'+
   '<div class="card mid" style="font-size:30px">第一次就答對：<b>'+G.first+' / '+n+'</b><br>這次獲得：<b style="color:#e08a00">⭐ '+G.gained+'</b>'+(G.first===n&&n>=3?'<br>全對獎勵 +3 ⭐':'')+
@@ -399,7 +446,7 @@ function tCheck(){var f=G.f;
   else{rec(f.a,f.b,false);TM.wrong++;sndNo();G.locked=true;$('#hint').textContent='答案是 '+G.target+'（'+kj(f.a,f.b)+'）';
     setTimeout(function(){if(view==='timed'&&TM.iv)tQ()},1300)}}
 function timedEnd(){var old=D.best[TM.key]||0,nb=TM.score>old,gain=Math.floor(TM.score/3);
-  if(nb)D.best[TM.key]=TM.score;D.stars+=gain;save();view='tresult';sndWin();confetti(nb?220:120);
+  if(nb)D.best[TM.key]=TM.score;D.stars+=gain;save();view='tresult';sndWin();setTimeout(function(){if(view==='tresult')sp(C(nb?'record':'timeup'))},700);confetti(nb?220:120);
   app.innerHTML=topbar(false)+'<div class="hero pop">'+(nb?'🏆':'⏱️')+'</div><h1>'+(nb?'新紀錄！':'時間到！')+'</h1>'+
   '<div class="card mid" style="font-size:30px">'+esc(selName(D.sel))+'<br>60 秒答對 <b style="font-size:44px;color:#1f9d55">'+TM.score+'</b> 題'+(TM.wrong?'，答錯 '+TM.wrong+' 題':'')+
   '<br>最佳紀錄：<b>'+Math.max(old,TM.score)+'</b> 題'+(gain?'<br>獲得 ⭐ '+gain:'')+'<div style="margin-top:10px;color:#e0561f">'+(nb?'飛吧！你又變強了！🏐':VB[rnd(VB.length)])+'</div></div>'+
@@ -407,7 +454,7 @@ function timedEnd(){var old=D.best[TM.key]||0,nb=TM.score>old,gain=Math.floor(TM
 
 /* ---------- 手寫答案（兩格：十位、個位） ---------- */
 function hwInit(){var f=G.f;G.hw={cells:[{s:[],cur:null,pid:null},{s:[],cur:null,pid:null}],phase:'write'};
-  hwDraw();autoSay(eqSpeech(f.a,f.b,true))}
+  hwDraw();autoSay(Q(f.a,f.b))}
 function hwOn(){return D.hwOcr!==false&&DR.state!=='fail'}
 function hwDraw(){var f=G.f;G.hw.phase='write';
   app.innerHTML=qHead()+'<div class="mid">✍️ 把答案寫在格子裡 '+sayBtn()+'</div><div class="q" style="font-size:60px">'+f.a+' × '+f.b+' = ?</div><div class="hint" id="hint"></div>'+
@@ -453,7 +500,7 @@ function hwSelf(note){if(hwEmpty()){toast('先在格子裡寫寫看喔 ✍️');
   app.innerHTML=qHead()+'<div class="mid">'+(note||'對一對，你寫對了嗎？')+'</div><div class="grid g2"><div class="card mid">正確答案<div class="q" style="margin:6px 0">'+f.a+' × '+f.b+' = <span class="box ok">'+(f.a*f.b)+'</span></div>'+kj(f.a,f.b)+'</div>'+
   '<div class="card mid">你寫的<img class="hwimg" alt="你寫的答案" src="'+G.hw.img+'"></div></div>'+
   '<div class="grid g2"><button class="btn green" data-a="hwok">✅ 我寫對了</button><button class="btn yellow" data-a="hwretry">🔁 再練習</button></div><div class="msg" id="msg"></div>';
-  sayZh(kj(f.a,f.b))}
+  sp(K(f.a,f.b))}
 function hwDone(){if(hwEmpty()){toast('先在格子裡寫寫看喔 ✍️');return}
   if(!hwOn()||DR.state!=='ready')return hwSelf();
   var r;try{r=DR.readCells([hwStrokesOf(0),hwStrokesOf(1)],String(G.f.a*G.f.b))}catch(e){r=null}
@@ -470,8 +517,8 @@ function hwDone(){if(hwEmpty()){toast('先在格子裡寫寫看喔 ✍️');retu
 function hwOk(){if(G.locked)return;G.locked=true;right()}
 function hwRetry(showAns){if(G.locked)return;wrongOnce();
   G.hw.cells.forEach(function(c){c.s=[];c.cur=null;c.pid=null});G.hw.trace=1;hwDraw();
-  var f=G.f;$('#hint').textContent='💡 '+kj(f.a,f.b)+'，描描看再寫一次';sayZh(kj(f.a,f.b))}
-function hwHint(){if(G.locked||!G.hw)return;wrongOnce();G.hw.trace=1;hwRedraw(0);hwRedraw(1);var f=G.f;$('#hint').textContent='💡 口訣：'+kj(f.a,f.b);sayZh(kj(f.a,f.b))}
+  var f=G.f;$('#hint').textContent='💡 '+kj(f.a,f.b)+'，描描看再寫一次';sp(K(f.a,f.b))}
+function hwHint(){if(G.locked||!G.hw)return;wrongOnce();G.hw.trace=1;hwRedraw(0);hwRedraw(1);var f=G.f;$('#hint').textContent='💡 口訣：'+kj(f.a,f.b);sp(K(f.a,f.b))}
 
 /* 數字辨識（小型神經網路，iPad 上離線執行） */
 var DR={state:'idle',W:null,
@@ -531,6 +578,8 @@ function heat(settings){
   var bk=Object.keys(D.best);
   h+='<div class="card"><b>⏱️ 60 秒挑戰最佳紀錄</b><div style="font-size:22px;margin-top:8px">'+(bk.length?bk.map(function(k){return esc(selName(k.split('').map(Number)))+'：'+D.best[k]+' 題'}).join('<br>'):'還沒有紀錄')+'</div></div>';
   h+='<div class="card" id="settings"><b>⚙️ 家長設定</b>'+
+  '<div class="set" style="border:0"><b>🗣️ 聲音</b>（點一下就會試聽）<div class="chips" style="justify-content:flex-start">'+Object.keys(VOICES).map(function(k){return '<button class="chip wide'+(curVoice()===k?' on':'')+'" data-a="voice" data-v="'+k+'">'+VOICES[k]+'</button>'}).join('')+'</div>'+
+  '<div style="font-size:16px;color:#8e8aa5">'+(curVoice()==='sys'?'使用 iPad 內建語音（設定 → 輔助使用 → 朗讀內容 → 聲音 → 中文（台灣）可以下載「美佳（增強）」等較自然的聲音）':(D.vc&&D.vc[curVoice()]?'✅ 這個聲音已存到 iPad，可以離線使用':'⏳ 正在把這個聲音存到 iPad（需連網，約 2～3 MB）；還沒存好時離線會改用 iPad 內建語音'))+'</div></div>'+
   '<label class="set"><input type="checkbox" id="s_slow"'+(D.slow?' checked':'')+'>🐢 慢速朗讀</label>'+
   '<label class="set"><input type="checkbox" id="s_auto"'+(D.autoSay!==false?' checked':'')+'>🔊 出題時自動唸題目</label>'+
   '<label class="set"><input type="checkbox" id="s_sound"'+(D.sound!==false?' checked':'')+'>🎵 音效</label>'+
@@ -558,7 +607,7 @@ function doImport(txt,mode){var o;try{o=JSON.parse(String(txt).trim())}catch(e){
   var okKey=/^[1-9]x[1-9]$/,clean={};Object.keys(o.stats).forEach(function(k){var s=o.stats[k];if(okKey.test(k)&&s&&typeof s==='object')clean[k]={c:+s.c||0,w:+s.w||0,h:String(s.h||'').replace(/[^01]/g,'').slice(-6),ms:+s.ms||0,mn:+s.mn||0,t:+s.t||0}});
   if(mode==='replace'){if(!confirm('確定要用匯入的資料取代目前全部資料嗎？'))return;
     var keep=blank();keep.stats=clean;keep.stars=+o.stars||0;keep.best=(o.best&&typeof o.best==='object')?o.best:{};
-    ['sel','slow','autoSay','sound','hwOcr','penOnly'].forEach(function(k){if(o[k]!==undefined)keep[k]=o[k]});D=keep}
+    ['sel','slow','autoSay','sound','hwOcr','penOnly','voice'].forEach(function(k){if(o[k]!==undefined)keep[k]=o[k]});D=keep}
   else{Object.keys(clean).forEach(function(k){var a=D.stats[k],b=clean[k];if(!a||(b.c+b.w)>(a.c+a.w))D.stats[k]=b});
     D.stars=Math.max(D.stars,+o.stars||0);var bb=o.best||{};Object.keys(bb).forEach(function(k){if(/^[1-9]+$/.test(k))D.best[k]=Math.max(D.best[k]||0,+bb[k]||0)})}
   load2();save();toast('匯入成功！');go('home')}
@@ -580,7 +629,7 @@ document.addEventListener('click',function(e){
     case 'lall':L.play=false;hush();L.shown=9;L.cur=0;learn();break;
     case 'lreset':L={shown:0,play:false,cur:0};hush();learn();break;
     case 'lrow':if(L.play){L.play=false;hush()}lSay(+el.dataset.n);break;
-    case 'lmode':D.learnMode=el.dataset.m;save();learn();sayZh(lText(D.learnA,3));break;
+    case 'lmode':D.learnMode=el.dataset.m;save();learn();sp(D.learnMode==='eq'?E(D.learnA,3):K(D.learnA,3));break;
     case 'lslow':D.slow=!D.slow;save();learn();break;
     case 'practice':D.sel=[+el.dataset.n];save();startQuiz('mix');break;
     case 'timedone':D.sel=[+el.dataset.n];save();startTimed();break;
@@ -604,7 +653,8 @@ document.addEventListener('click',function(e){
     case 'hwmis':hwSelf('對不起看錯了 🙏 請你自己對一對');break;
     case 'hwwrong':case 'hwretry':hwRetry();break;
     case 'cell':cellInfo(+el.dataset.n,+el.dataset.m);break;
-    case 'testvoice':sayZh('二二得四，三四十二，二五一十，九九八十一');break;
+    case 'testvoice':sp(C('test'));break;
+    case 'voice':D.voice=el.dataset.v;save();sp(C('test'));voicePrefetch(D.voice,function(ok){if(view==='heat')heat(true)});heat(true);break;
     case 'resetstats':if(confirm('確定清除所有答題紀錄、最佳紀錄與星星？')){D.stats={};D.best={};D.stars=0;save();heat()}break;
     case 'exportfile':{var blob=new Blob([exportText()],{type:'application/json'}),u=URL.createObjectURL(blob),l=document.createElement('a');
       l.href=u;l.download='times-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(l);l.click();l.remove();
@@ -619,7 +669,7 @@ document.addEventListener('click',function(e){
 });
 document.addEventListener('change',function(e){var id=e.target.id,v=e.target.checked;
   if(id==='penonly'){D.penOnly=v;save();toast(v?'只有 Apple Pencil 會寫字':'手指和筆都可以寫')}
-  else if(id==='s_slow'){D.slow=v;save();sayZh('三四十二')}
+  else if(id==='s_slow'){D.slow=v;save();sp(K(3,4))}
   else if(id==='s_auto'){D.autoSay=v;save()}
   else if(id==='s_sound'){D.sound=v;save();if(v)sndOk()}
   else if(id==='s_hw'){D.hwOcr=v;save();toast(v?'手寫自動辨識：開':'手寫自動辨識：關')}});
@@ -629,6 +679,7 @@ window.addEventListener('resize',function(){var c=$('#fx');c.width=innerWidth;c.
 
 window.__times={kj:kj,zhNum:zhNum,eqSpeech:eqSpeech,level:level,DR:DR,D:function(){return D},G:function(){return G},startQuiz:startQuiz,go:go};
 load();render();
+setTimeout(function(){voicePrefetch(curVoice())},3000);
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
 })();
 </script>
