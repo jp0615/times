@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="九九乘法">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ff8a1f">
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>九九乘法小達人</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+input,textarea{-webkit-user-select:text;user-select:text}
+html,body{margin:0;height:100%;font-family:-apple-system,"PingFang TC","Heiti TC","Microsoft JhengHei",sans-serif;background:linear-gradient(160deg,#fff1d6,#ffe3cc 50%,#dff0ff);color:#3a2e5a}
+#app{max-width:980px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 24px);min-height:100%}
+h1{font-size:40px;margin:6px 0;text-align:center}
+h2{font-size:28px;margin:8px 0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.stars{background:#fff;border-radius:30px;padding:8px 20px;font-size:28px;font-weight:800;box-shadow:0 4px 0 #f3c94b;color:#e08a00}
+.btn{display:block;border:0;border-radius:24px;padding:18px 22px;font-size:26px;font-weight:800;color:#fff;background:#ff7a59;box-shadow:0 6px 0 rgba(0,0,0,.18);cursor:pointer;font-family:inherit;text-align:center}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.18)}
+.btn.blue{background:#3b9cff}.btn.green{background:#38c172}.btn.purple{background:#9b6bff}.btn.yellow{background:#ffb800;color:#5a3d00}.btn.gray{background:#8e8aa5}.btn.red{background:#ef5b73}.btn.orange{background:#ff8a1f}.btn.teal{background:#1fb5a8}.btn.pink{background:#e0529c}
+.btn.small{font-size:18px;padding:10px 14px;border-radius:16px;display:inline-block}
+.grid{display:grid;gap:16px}.g2{grid-template-columns:1fr 1fr}
+.card{background:#fff;border-radius:26px;padding:18px;box-shadow:0 6px 0 rgba(0,0,0,.08);margin:12px 0}
+.hero{text-align:center;font-size:90px;margin:6px 0}
+.mid{text-align:center;font-size:24px;color:#6a5d94}
+.q{font-size:76px;font-weight:900;text-align:center;margin:10px 0;letter-spacing:2px;color:#3a2e5a}
+.q .box{display:inline-block;min-width:1.6em;border-bottom:8px solid #ff8a1f;color:#ff8a1f}
+.q .box.ok{color:#1f9d55;border-color:#38c172}
+.hint{text-align:center;font-size:30px;color:#9b6bff;font-weight:800;min-height:40px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.opt{font-size:52px;padding:22px 10px;background:#fff;color:#3a2e5a;border:4px solid #ffd2a8;border-radius:26px;font-weight:900;cursor:pointer;font-family:inherit;box-shadow:0 6px 0 #ffd2a8}
+.opt.ok{background:#b8f2cf;border-color:#38c172;box-shadow:0 6px 0 #38c172}
+.opt.no{background:#ffd0d6;border-color:#ef5b73;animation:shake .4s}
+.spk{font-size:30px;background:#3b9cff;border:0;border-radius:50%;width:60px;height:60px;color:#fff;box-shadow:0 4px 0 #1d6fc4;cursor:pointer;vertical-align:middle}
+.spk:active{transform:translateY(3px)}
+.bar{height:18px;background:#fff;border-radius:10px;overflow:hidden;margin:6px 0 10px}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,#38c172,#ffb800);transition:width .3s}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:520px;margin:14px auto 0}
+.key{font-size:46px;font-weight:900;height:86px;border:0;border-radius:22px;background:#fff;color:#3a2e5a;box-shadow:0 6px 0 #ffd2a8;border:3px solid #ffd2a8;font-family:inherit;cursor:pointer}
+.key:active{transform:translateY(4px);box-shadow:0 2px 0 #ffd2a8}
+.key.ok{background:#38c172;color:#fff;border-color:#2a9a5a;box-shadow:0 6px 0 #2a9a5a}
+.key.del{background:#ffe7c2;font-size:36px}
+.seq{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:18px 0}
+.seq span{min-width:96px;height:96px;line-height:96px;background:#fff;border-radius:22px;font-size:46px;font-weight:900;text-align:center;box-shadow:0 5px 0 #ffd2a8;padding:0 8px}
+.seq span.gap{background:#fff7e0;border:4px dashed #ff8a1f;color:#ff8a1f;line-height:88px}
+.mcard{height:120px;border-radius:20px;border:0;font-size:38px;font-weight:900;font-family:inherit;background:#ff8a1f;color:#fff;box-shadow:0 5px 0 #c9620a;cursor:pointer;padding:4px}
+.mcard.up{background:#fff;color:#3a2e5a;box-shadow:0 5px 0 #ffd2a8;border:3px solid #ffd2a8}
+.mcard.eq{font-size:32px}
+.mcard.done{background:#b8f2cf;color:#1d6b3e;box-shadow:none;pointer-events:none;border:0}
+.mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+.msg{text-align:center;font-size:32px;font-weight:800;min-height:48px;color:#e0527a;margin:6px 0}
+.chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:10px 0}
+.chip{min-width:70px;height:70px;border-radius:20px;border:3px solid #ffd2a8;background:#fff;font-size:34px;font-weight:900;color:#3a2e5a;font-family:inherit;cursor:pointer;box-shadow:0 4px 0 #ffd2a8}
+.chip.on{background:#ff8a1f;color:#fff;border-color:#c9620a;box-shadow:0 4px 0 #c9620a}
+.chip.wide{min-width:auto;padding:0 18px;font-size:22px}
+.lrow{display:flex;align-items:center;gap:14px;background:#fff;border-radius:20px;padding:10px 16px;margin:8px 0;box-shadow:0 4px 0 #ffd2a8;cursor:pointer;transition:transform .2s}
+.lrow .eq{font-size:34px;font-weight:900;flex:1}
+.lrow .kj{font-size:38px;font-weight:900;color:#e0561f;letter-spacing:4px}
+.lrow.hide .eq,.lrow.hide .kj{visibility:hidden}
+.lrow.hide{background:#fff7ec}
+.lrow.cur{background:#fff3b0;transform:scale(1.03);box-shadow:0 4px 0 #ffb800}
+.ltools{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0}
+.timer{font-size:56px;font-weight:900;text-align:center;color:#e0561f}
+.score{font-size:30px;font-weight:800;text-align:center}
+.heat{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:10px}
+.heat div{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;color:#3a2e5a;cursor:pointer;flex-direction:column;line-height:1.05}
+.heat div small{font-size:11px;font-weight:600;opacity:.85}
+.heat .hd{background:none;color:#8e8aa5;font-size:20px;cursor:default}
+.lv0{background:#eeeaf6;color:#a39dbb!important}.lv1{background:#ff9aa8}.lv2{background:#ffc078}.lv3{background:#ffe27a}.lv4{background:#a6e8b9}.lv5{background:#2fae62;color:#fff!important}
+.legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;font-size:15px;margin-top:10px}
+.legend span{padding:4px 10px;border-radius:10px}
+.hwcells{display:flex;gap:14px;justify-content:center}
+.hwcell{position:relative;background:#fff;border:4px solid #ffd2a8;border-radius:22px;box-shadow:0 6px 0 #ffd2a8;overflow:hidden}
+.hwcell canvas{display:block;touch-action:none;-webkit-touch-callout:none}
+.hwlab{position:absolute;left:10px;top:6px;font-size:16px;color:#c2a98c;pointer-events:none}
+.hwtools{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.hwst{font-size:16px;color:#8e8aa5;text-align:center;margin-top:8px;min-height:20px}
+.hwpen{display:block;margin-top:10px;font-size:18px;color:#6a5d94;text-align:center}.hwpen input{width:22px;height:22px;vertical-align:middle}
+.hwimg{max-width:100%;border-radius:12px;border:2px solid #ffd2a8;display:block;margin:0 auto}
+.set{display:block;font-size:22px;padding:10px 0;border-bottom:1px dashed #f1dcc4}.set input{width:24px;height:24px;vertical-align:middle;margin-right:8px}
+textarea{width:100%;font-size:18px;padding:12px;border:3px solid #ffd2a8;border-radius:16px;font-family:inherit;background:#fff;color:#3a2e5a;min-height:110px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}
+@keyframes shake{25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+@keyframes pop{0%{transform:scale(.3);opacity:0}60%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
+.pop{animation:pop .5s}.shake{animation:shake .4s}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:50}
+#toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);background:#3a2e5a;color:#fff;padding:14px 26px;border-radius:24px;font-size:22px;z-index:60;display:none;max-width:90%;text-align:center}
+.ov{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(58,46,90,.55);z-index:70;display:flex;align-items:center;justify-content:center;padding:24px}
+@media (max-width:600px){.q{font-size:54px}.opt{font-size:40px}.key{height:70px;font-size:38px}.seq span{min-width:64px;height:70px;line-height:70px;font-size:34px}.seq span.gap{line-height:62px}.lrow .eq{font-size:26px}.lrow .kj{font-size:28px;letter-spacing:2px}.heat div{font-size:13px}.heat div small{display:none}.mcard{font-size:28px}.mcard.eq{font-size:22px}.chip{min-width:56px;height:56px;font-size:28px}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<canvas id="fx"></canvas>
+<div id="toast"></div>
+<script>
+(function(){
+'use strict';
+var KEY='timesApp.v1';
+var $=function(s){return document.querySelector(s)};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function rnd(n){return Math.floor(Math.random()*n)}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=rnd(i+1),t=a[i];a[i]=a[j];a[j]=t}return a}
+function now(){return Date.now()}
+
+/* ---------- 資料 ---------- */
+var D;
+function blank(){return {v:1,stars:0,stats:{},best:{},sel:[2,3,4,5,6,7,8,9],slow:false,autoSay:true,sound:true,hwOcr:true,penOnly:false,learnA:2,learnMode:'kj'}}
+function load(){var b=blank(),o=null;try{o=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+  D=(o&&typeof o==='object')?o:b;for(var k in b)if(D[k]===undefined)D[k]=b[k];
+  if(!Array.isArray(D.sel)||!D.sel.length)D.sel=b.sel.slice();
+  D.sel=D.sel.filter(function(a){return a>=1&&a<=9})}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){toast('儲存失敗，請檢查儲存空間')}}
+function fk(a,b){return a+'x'+b}
+/* 記錄一題：ok 是否第一次就答對；ms 作答秒數（毫秒） */
+function rec(a,b,ok,ms){var s=D.stats[fk(a,b)]||(D.stats[fk(a,b)]={c:0,w:0,h:'',ms:0,mn:0});
+  if(ok){s.c++;if(ms>0&&ms<60000){s.ms+=ms;s.mn++}}else s.w++;
+  s.h=(String(s.h||'')+(ok?'1':'0')).slice(-6);s.t=now();save()}
+function acc(s){return s&&s.c+s.w?s.c/(s.c+s.w):null}
+function avgSec(s){return s&&s.mn?s.ms/s.mn/1000:null}
+/* 熟練度 0 沒練過、1 很需要加強、2 加強中、3 快會了、4 會了、5 熟練 */
+function level(a,b){var s=D.stats[fk(a,b)];if(!s||s.c+s.w===0)return 0;
+  var p=acc(s),h=String(s.h||''),last=function(n){return h.length>=n&&h.slice(-n).indexOf('0')<0},t=avgSec(s);
+  if(s.c>=5&&last(4)&&p>=0.8&&(t===null||t<=5))return 5;
+  if(s.c>=3&&last(3)&&p>=0.7)return 4;
+  if(p>=0.75&&last(1))return 3;
+  if(p>=0.5)return 2;return 1}
+var LVN=['還沒練過','很需要加強','加強中','快會了','會了','熟練'];
+
+/* ---------- 數字與口訣（台灣傳統九九唸法） ---------- */
+var ZD=['零','一','二','三','四','五','六','七','八','九'];
+function zhNum(n){ /* 一般唸法：10 十、12 十二、20 二十、81 八十一 */
+  if(n<10)return ZD[n];if(n<20)return '十'+(n%10?ZD[n%10]:'');
+  return ZD[Math.floor(n/10)]+'十'+(n%10?ZD[n%10]:'')}
+function kj(a,b){ /* 口訣：積小於 10 加「得」；積等於 10 唸「一十」；其餘照一般唸法 */
+  var p=a*b;if(p<10)return ZD[a]+ZD[b]+'得'+ZD[p];
+  return ZD[a]+ZD[b]+(p===10?'一十':zhNum(p))}
+function eqSpeech(a,b,ask){return zhNum(a)+'乘以'+zhNum(b)+(ask?'等於多少？':'等於'+zhNum(a*b))}
+
+/* ---------- 發音（中文） ---------- */
+var voice=null,spSeq=0;
+function pickVoice(){if(!('speechSynthesis' in window))return;var vs=speechSynthesis.getVoices()||[];
+  var tw=vs.filter(function(v){return /zh[-_]TW/i.test(v.lang)});
+  var cn=vs.filter(function(v){return /^zh/i.test(v.lang)&&!/HK|yue/i.test(v.lang)});
+  voice=tw.filter(function(v){return /mei-?jia|美佳/i.test(v.name)})[0]||tw[0]||cn[0]||null}
+if('speechSynthesis' in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
+function sayZh(text,slow,done){
+  var my=++spSeq;
+  if(!('speechSynthesis' in window)){if(done)setTimeout(function(){if(my===spSeq)done()},900);return}
+  try{speechSynthesis.cancel()}catch(e){}
+  var fired=false,g;function fin(){if(fired)return;fired=true;clearTimeout(g);if(done&&my===spSeq)setTimeout(done,250)}
+  try{var u=new SpeechSynthesisUtterance(text);u.lang='zh-TW';if(voice)u.voice=voice;u.rate=(D.slow||slow)?0.6:0.95;u.pitch=1.08;
+    u.onend=fin;u.onerror=fin;speechSynthesis.speak(u)}catch(e){fin();return}
+  g=setTimeout(fin,1400+text.length*((D.slow||slow)?420:260)); /* 部分裝置 onend 不觸發的保險 */
+}
+function hush(){spSeq++;try{speechSynthesis.cancel()}catch(e){}}
+
+/* ---------- 音效 ---------- */
+var AC=null;
+function ac(){if(!AC){var C=window.AudioContext||window.webkitAudioContext;if(C)try{AC=new C()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
+function tone(f,t0,d,type,vol){if(D&&D.sound===false)return;var a=ac();if(!a)return;var o=a.createOscillator(),g=a.createGain();o.type=type||'sine';o.frequency.value=f;
+  var s=a.currentTime+t0;g.gain.setValueAtTime(0.0001,s);g.gain.exponentialRampToValueAtTime(vol||0.25,s+0.02);g.gain.exponentialRampToValueAtTime(0.0001,s+d);
+  o.connect(g);g.connect(a.destination);o.start(s);o.stop(s+d+0.05)}
+function sndOk(){tone(660,0,.15,'triangle');tone(880,.12,.15,'triangle');tone(1320,.24,.25,'triangle')}
+function sndNo(){tone(220,0,.2,'sawtooth',.15);tone(165,.15,.3,'sawtooth',.15)}
+function sndWin(){[523,659,784,1047,784,1047,1319].forEach(function(f,i){tone(f,i*.12,.2,'triangle')})}
+function sndTap(){tone(520,0,.06,'sine',.15)}
+function sndTick(){tone(1000,0,.05,'square',.06)}
+
+/* ---------- 彩紙 ---------- */
+var parts=[],fxRun=false;
+function confetti(n){var c=$('#fx');c.width=innerWidth;c.height=innerHeight;var cols=['#ff7a59','#ffb800','#38c172','#3b9cff','#9b6bff','#ef5b73'];
+  for(var i=0;i<(n||90);i++)parts.push({x:innerWidth/2+(Math.random()-.5)*200,y:innerHeight*.45,vx:(Math.random()-.5)*16,vy:-Math.random()*16-4,s:6+Math.random()*8,c:cols[rnd(6)],r:Math.random()*6,vr:(Math.random()-.5)*.4,l:90+rnd(40)});
+  if(!fxRun){fxRun=true;requestAnimationFrame(fxLoop)}}
+function fxLoop(){var c=$('#fx'),x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);
+  parts=parts.filter(function(p){return p.l>0&&p.y<c.height+20});
+  parts.forEach(function(p){p.vy+=.45;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;p.l--;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);x.restore()});
+  if(parts.length)requestAnimationFrame(fxLoop);else{fxRun=false;x.clearRect(0,0,c.width,c.height)}}
+var tt;function toast(m){var t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(function(){t.style.display='none'},2400)}
+function notice(html){var o=$('#notice');if(!o){o=document.createElement('div');o.id='notice';o.className='ov';document.body.appendChild(o)}
+  o.innerHTML='<div class="card mid" style="max-width:540px;font-size:26px;line-height:1.5">'+html+'<div style="margin-top:16px"><button class="btn green" style="display:inline-block" data-a="closenotice">好的</button></div></div>';o.style.display='flex'}
+var PRAISE=['太棒了！🎉','答對了！⭐','你好厲害！👏','讚讚讚！🌟','完美！💯','超強的！🏆','算得好快！🚀'];
+var TRYAG=['沒關係，再試試看！💪','差一點點喔！','加油，你可以的！'];
+var VB=['飛吧！🏐','下一球！🏐','漂亮的托球！🏐','好球！接得漂亮！🏐','這一球交給我！🏐','跳得好高！🏐','把球連起來！🏐','快攻成功！🏐','攔網攔下來了！🏐','發球得分！🏐'];
+function praise(){return Math.random()<0.12?VB[rnd(VB.length)]:PRAISE[rnd(PRAISE.length)]}
+function tryag(){return TRYAG[rnd(TRYAG.length)]}
+
+/* ---------- 畫面 ---------- */
+var app=$('#app'),view='home',G=null;
+function topbar(back){return '<div class="top">'+(back?'<button class="btn small gray" data-a="home">🏠 回首頁</button>':'<span></span>')+'<div class="stars">⭐ '+D.stars+'</div></div>'}
+function go(v){hush();stopTimer();view=v;render()}
+function render(){
+  if(view==='home')home();else if(view==='learn')learn();else if(view==='menu')menu();
+  else if(view==='quiz')quizQ();else if(view==='result')result();else if(view==='heat')heat();else if(view==='io')ioView();
+  window.scrollTo(0,0)}
+function home(){
+  var m=0,t=0;for(var a=2;a<=9;a++)for(var b=1;b<=9;b++){t++;if(level(a,b)>=4)m++}
+  app.innerHTML=topbar(false)+'<h1>✖️ 九九乘法小達人</h1><div class="hero pop">🏐</div>'+
+  '<div class="mid">2～9 的乘法表，已經學會 <b>'+m+'</b> / '+t+' 題</div>'+
+  '<div class="grid g2" style="margin-top:20px">'+
+  '<button class="btn blue" style="font-size:32px;padding:32px" data-a="learn">📖 背口訣</button>'+
+  '<button class="btn green" style="font-size:32px;padding:32px" data-a="menu">🎮 開始挑戰</button>'+
+  '<button class="btn orange" style="font-size:30px;padding:26px" data-a="timedgo">⏱️ 60 秒挑戰</button>'+
+  '<button class="btn purple" style="font-size:30px;padding:26px" data-a="heat">📊 熟練度表</button>'+
+  '<button class="btn yellow" data-a="io">📦 匯出／匯入</button>'+
+  '<button class="btn gray" data-a="heat" data-s="1">⚙️ 家長設定</button></div>'}
+
+/* ---------- 背口訣 ---------- */
+var L={shown:0,play:false,cur:0};
+function learn(){
+  var a=D.learnA||2;
+  var h=topbar(true)+'<h2>📖 '+ZD[a]+'的乘法表</h2><div class="chips">';
+  for(var i=1;i<=9;i++)h+='<button class="chip'+(i===a?' on':'')+'" data-a="lsel" data-n="'+i+'">'+i+'</button>';
+  h+='</div><div class="ltools">'+
+  '<button class="btn small green" data-a="lplay">'+(L.play?'⏸️ 停止':'▶️ 自動唸一遍')+'</button>'+
+  '<button class="btn small blue" data-a="lnext">👉 下一行</button>'+
+  '<button class="btn small yellow" data-a="lall">👀 全部顯示</button>'+
+  '<button class="btn small gray" data-a="lreset">🔄 蓋起來重背</button></div>'+
+  '<div class="chips"><button class="chip wide'+(D.learnMode==='kj'?' on':'')+'" data-a="lmode" data-m="kj">唸口訣（二三得六）</button>'+
+  '<button class="chip wide'+(D.learnMode==='eq'?' on':'')+'" data-a="lmode" data-m="eq">唸算式（二乘以三等於六）</button>'+
+  '<button class="chip wide'+(D.slow?' on':'')+'" data-a="lslow">🐢 慢慢唸</button></div>'+
+  '<div class="mid" style="font-size:18px">點任何一行就會唸給你聽</div><div id="lrows">';
+  for(var b=1;b<=9;b++)h+='<div class="lrow'+(b>L.shown?' hide':'')+(L.cur===b?' cur':'')+'" data-a="lrow" data-n="'+b+'"><span class="eq">'+a+' × '+b+' = '+(a*b)+'</span><span class="kj">'+kj(a,b)+'</span></div>';
+  app.innerHTML=h+'</div><div class="grid g2" style="margin-top:14px"><button class="btn green" data-a="practice" data-n="'+a+'">🎮 練習'+ZD[a]+'的乘法表</button><button class="btn orange" data-a="timedone" data-n="'+a+'">⏱️ '+ZD[a]+'的 60 秒挑戰</button></div>'}
+function lText(a,b){return D.learnMode==='eq'?eqSpeech(a,b):kj(a,b)}
+function lSay(b,done){var a=D.learnA;L.cur=b;if(b>L.shown)L.shown=b;
+  var rows=document.querySelectorAll('.lrow');for(var i=0;i<rows.length;i++){rows[i].classList.toggle('cur',i+1===b);rows[i].classList.toggle('hide',i+1>L.shown)}
+  var el=rows[b-1];if(el&&el.scrollIntoView&&L.play)try{el.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){}
+  sayZh(lText(a,b),false,done)}
+function lPlay(){if(L.play){L.play=false;hush();learn();return}
+  L.play=true;L.shown=0;learn();var b=1;
+  (function step(){if(!L.play||view!=='learn')return;if(b>9){L.play=false;L.cur=0;learn();sndWin();confetti(60);return}lSay(b++,step)})()}
+
+/* ---------- 選範圍 ---------- */
+function selKey(sel){return sel.slice().sort().join('')}
+function selName(sel){if(sel.length===1)return ZD[sel[0]]+'的乘法表';if(selKey(sel)==='23456789')return '2～9 混合';if(sel.length===9)return '1～9 混合';return sel.slice().sort().join('、')+' 混合'}
+function menu(){
+  var h=topbar(true)+'<h2>🎮 選擇挑戰</h2><div class="card"><b>要練哪幾個乘法表？</b>（可以選很多個）<div class="chips">';
+  for(var i=1;i<=9;i++)h+='<button class="chip'+(D.sel.indexOf(i)>=0?' on':'')+'" data-a="msel" data-n="'+i+'">'+i+'</button>';
+  h+='</div><div class="chips"><button class="chip wide" data-a="mall" data-m="2">2～9 全部</button><button class="chip wide" data-a="mall" data-m="1">1～9 全部</button></div>'+
+  '<div class="mid" style="font-size:20px">目前：'+esc(selName(D.sel))+'　｜　答錯的題目會比較常出現</div></div>'+
+  '<div class="grid g2">'+
+  '<button class="btn green" data-a="start" data-g="mix">🌈 綜合挑戰</button>'+
+  '<button class="btn blue" data-a="start" data-g="choice">🔘 選選看</button>'+
+  '<button class="btn purple" data-a="start" data-g="fill">🔢 填填看（數字鍵盤）</button>'+
+  '<button class="btn teal" data-a="start" data-g="pattern">🔍 找規律</button>'+
+  '<button class="btn red" data-a="start" data-g="match">🃏 翻牌配對</button>'+
+  '<button class="btn pink" data-a="start" data-g="write">✍️ 手寫答案</button>'+
+  '<button class="btn orange" style="grid-column:1/-1" data-a="start" data-g="timed">⏱️ 60 秒挑戰（最佳：'+(D.best[selKey(D.sel)]||0)+' 題）</button></div>';
+  app.innerHTML=h}
+
+/* ---------- 出題 ---------- */
+function poolOf(sel){var p=[];sel.forEach(function(a){for(var b=1;b<=9;b++)p.push({a:a,b:b})});return p}
+function weight(f){var s=D.stats[fk(f.a,f.b)];if(!s||s.c+s.w===0)return 3.5;
+  var t=s.c+s.w,w=1+(s.w/t)*6+(t<3?1.5:0),h=String(s.h||'').slice(-3);
+  for(var i=0;i<h.length;i++)if(h[i]==='0')w+=1.5;
+  var sec=avgSec(s);if(sec!==null&&sec>6)w+=1;
+  if(f.b===1&&level(f.a,f.b)>=3)w*=0.4; /* ×1 很簡單，會了就少出 */
+  return w}
+function pickFact(pool,avoid){var c=pool.filter(function(f){return avoid.indexOf(fk(f.a,f.b))<0});if(!c.length)c=pool;
+  var tot=0;c.forEach(function(f){tot+=weight(f)});var r=Math.random()*tot;
+  for(var i=0;i<c.length;i++){r-=weight(c[i]);if(r<=0)return c[i]}return c[c.length-1]}
+function distract(a,b){var p=a*b,c1=[a*(b+1),a*(b-1),(a+1)*b,(a-1)*b],c2=[p+1,p-1,p+2,p-2,p+10,p-10,a+b];
+  if(p>=10&&p%10!==Math.floor(p/10))c2.push((p%10)*10+Math.floor(p/10));
+  var seen={},out=[];seen[p]=1;
+  function add(list){shuffle(list).forEach(function(x){if(out.length<3&&x>0&&x<=90&&!seen[x]){seen[x]=1;out.push(x)}})}
+  add(c1.slice(0,2+rnd(3)));add(c2);add(c1);return out}
+function startQuiz(g){
+  if(!D.sel.length){toast('請先選至少一個乘法表');return}
+  if(g==='timed')return startTimed();
+  var pool=poolOf(D.sel);
+  if(g==='match'&&!matchable(pool)){notice('翻牌配對需要至少 4 個不同的答案，請多選一個乘法表再玩喔！');return}
+  var N=g==='match'?3:g==='write'?8:10,types=[];
+  for(var i=0;i<N;i++){var t=g;
+    if(g==='mix'){var ts=['choice','fill','pattern','choice','fill'];t=ts[rnd(ts.length)];if(i===4&&matchable(pool))t='match';if(i===8&&D.hwOcr!==false&&rnd(2))t='write'}
+    types.push(t)}
+  G={g:g,pool:pool,types:types,i:0,first:0,gained:0,recent:[],requeue:[],locked:false};
+  if(g==='write'||types.indexOf('write')>=0)DR.ensure();
+  view='quiz';quizQ()}
+function matchable(pool){var s={};pool.forEach(function(f){s[f.a*f.b]=1});return Object.keys(s).length>=4}
+function qHead(){return topbar(false).replace('<span></span>','<button class="btn small gray" data-a="quit">✕ 結束</button>')+'<div class="bar"><i style="width:'+(G.i/G.types.length*100)+'%"></i></div>'}
+function nextFact(){
+  var f;if(G.requeue.length&&G.requeue[0].at<=G.i)f=G.requeue.shift().f;else f=pickFact(G.pool,G.recent);
+  G.recent.push(fk(f.a,f.b));if(G.recent.length>4)G.recent.shift();return f}
+function sayBtn(){return '<button class="spk" data-a="qsay">🔊</button>'}
+function quizQ(){
+  if(G.i>=G.types.length)return finish();
+  var t=G.types[G.i];G.locked=false;G.tried=0;G.t0=now();hush();
+  if(t==='match')return matchQ();
+  var f=nextFact();G.f=f;G.miss=false;
+  var a=f.a,b=f.b,p=a*b,h=qHead();
+  if(t==='choice'){
+    G.opts=shuffle([p].concat(distract(a,b)));
+    h+='<div class="mid">選出正確答案 '+sayBtn()+'</div><div class="q">'+a+' × '+b+' = <span class="box" id="ans">?</span></div><div class="hint" id="hint"></div>'+
+    '<div class="opts">'+G.opts.map(function(o,i){return '<button class="opt" data-a="ans" data-i="'+i+'">'+o+'</button>'}).join('')+'</div><div class="msg" id="msg"></div>';
+    app.innerHTML=h;autoSay(eqSpeech(a,b,true));
+  }else if(t==='fill'){
+    G.miss=Math.random()<0.2&&a>1; /* 偶爾挖掉乘數：3 × ? = 12 */
+    G.target=G.miss?b:p;G.inp='';
+    h+='<div class="mid">'+(G.miss?'空格裡是多少？':'用數字鍵盤寫答案')+' '+sayBtn()+'</div><div class="q" id="qline"></div><div class="hint" id="hint"></div>'+padHtml()+'<div class="msg" id="msg"></div>';
+    app.innerHTML=h;fillDraw();autoSay(G.miss?zhNum(a)+'乘以多少等於'+zhNum(p)+'？':eqSpeech(a,b,true));
+  }else if(t==='pattern'){
+    var lo=Math.max(1,b-4),hi=Math.min(b,5),st=lo+rnd(hi-lo+1);
+    G.seq=[];for(var k=st;k<st+5;k++)G.seq.push(k);
+    var os=[p,p+a,p-a,p+1,p-1,p+2].filter(function(x,i,arr){return x>0&&arr.indexOf(x)===i});
+    G.opts=shuffle([p].concat(shuffle(os.slice(1)).slice(0,3)));
+    h+='<div class="mid">🔍 找規律：空格裡是多少？</div><div class="seq">'+G.seq.map(function(k){return k===b?'<span class="gap" id="ans">?</span>':'<span>'+(a*k)+'</span>'}).join('')+'</div><div class="hint" id="hint"></div>'+
+    '<div class="opts">'+G.opts.map(function(o,i){return '<button class="opt" data-a="ans" data-i="'+i+'">'+o+'</button>'}).join('')+'</div><div class="msg" id="msg"></div>';
+    app.innerHTML=h;
+  }else if(t==='write'){hwInit()}
+}
+function autoSay(t){if(D.autoSay!==false)setTimeout(function(){if(view==='quiz')sayZh(t)},250)}
+function qSay(){var t=G&&G.types[G.i],f=G&&G.f;if(!f)return;
+  if(t==='fill'&&G.miss)sayZh(zhNum(f.a)+'乘以多少等於'+zhNum(f.a*f.b)+'？');else if(t==='pattern')sayZh('每次加'+zhNum(f.a));else sayZh(eqSpeech(f.a,f.b,true))}
+function padHtml(){var k='';[1,2,3,4,5,6,7,8,9].forEach(function(n){k+='<button class="key" data-a="key" data-k="'+n+'">'+n+'</button>'});
+  return '<div class="pad">'+k+'<button class="key del" data-a="key" data-k="del">⌫</button><button class="key" data-a="key" data-k="0">0</button><button class="key ok" data-a="key" data-k="ok">✔</button></div>'}
+function fillDraw(okState){var f=G.f,box='<span class="box'+(okState?' ok':'')+'">'+(G.inp||'&nbsp;')+'</span>';
+  $('#qline').innerHTML=G.miss?f.a+' × '+box+' = '+(f.a*f.b):f.a+' × '+f.b+' = '+box}
+function showHint(){var f=G.f,el=$('#hint');if(!el)return;
+  var t=G.types[G.i];
+  el.textContent=t==='pattern'?'提示：每次多 '+f.a+' 喔！':'💡 口訣：'+kj(f.a,f.b);
+  el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
+  sayZh(t==='pattern'?'每次加'+zhNum(f.a):kj(f.a,f.b))}
+function wrongOnce(){if(!G.tried){rec(G.f.a,G.f.b,false);G.requeue.push({f:G.f,at:G.i+3})}G.tried++}
+function right(){
+  var first=!G.tried,ms=now()-G.t0;
+  if(first){rec(G.f.a,G.f.b,true,ms);G.first++;G.gained++;D.stars++;save()}
+  sndOk();confetti(first?70:30);var m=$('#msg');if(m){m.textContent=praise();m.classList.add('pop')}
+  var t=G.types[G.i],f=G.f;sayZh(kj(f.a,f.b));
+  G.i++;setTimeout(function(){if(view==='quiz'&&G)quizQ()},1700)}
+function onAns(i){if(G.locked)return;var o=G.opts[i],btn=document.querySelectorAll('.opt')[i];
+  if(o===G.f.a*G.f.b){G.locked=true;btn.classList.add('ok');var an=$('#ans');if(an){an.textContent=o;an.classList.add('ok')}right()}
+  else{sndNo();btn.classList.add('no');btn.style.pointerEvents='none';wrongOnce();$('#msg').textContent=tryag();showHint()}}
+function onKey(k){if(G.locked)return;
+  if(k==='del'){G.inp=G.inp.slice(0,-1);sndTap();fillDraw();return}
+  if(k==='ok'){if(!G.inp){toast('先按數字喔');return}return fillCheck()}
+  if(G.inp.length>=2)return;G.inp+=k;sndTap();fillDraw();
+  if(+G.inp===G.target)fillCheck();else if(G.inp.length>=String(G.target).length&&G.inp.length>=2)fillCheck()}
+function fillCheck(){
+  if(+G.inp===G.target){G.locked=true;fillDraw(true);right()}
+  else{sndNo();var q=$('#qline');q.classList.remove('shake');void q.offsetWidth;q.classList.add('shake');wrongOnce();$('#msg').textContent=tryag();G.inp='';fillDraw();showHint()}}
+
+/* 翻牌配對 */
+function matchQ(){var used={},fs=[],tries=0;
+  while(fs.length<4&&tries++<200){var f=pickFact(G.pool,fs.map(function(x){return fk(x.a,x.b)}));if(!used[f.a*f.b]){used[f.a*f.b]=1;fs.push(f)}}
+  var cards=[];fs.forEach(function(f,i){cards.push({id:i,f:f,side:'eq'});cards.push({id:i,f:f,side:'p'})});
+  G.m={cards:shuffle(cards),open:[],done:0,total:fs.length,bad:{}};matchDraw()}
+function matchDraw(){var m=G.m;
+  app.innerHTML=qHead()+'<div class="mid">翻翻看：把算式和答案配成一對</div><div class="mgrid">'+m.cards.map(function(c,i){
+    var up=m.open.indexOf(i)>=0||c.done,txt=c.side==='eq'?c.f.a+' × '+c.f.b:String(c.f.a*c.f.b);
+    return '<button class="mcard'+(up?' up':'')+(c.side==='eq'?' eq':'')+(c.done?' done':'')+'" data-a="flip" data-i="'+i+'">'+(up?txt:'🏐')+'</button>'}).join('')+'</div><div class="msg" id="msg"></div>'}
+function onFlip(i){var m=G.m,c=m.cards[i];if(G.locked||c.done||m.open.indexOf(i)>=0)return;
+  m.open.push(i);sndTap();matchDraw();
+  if(m.open.length===2){var a=m.cards[m.open[0]],b=m.cards[m.open[1]];G.locked=true;
+    if(a.id===b.id){a.done=b.done=true;m.done++;m.open=[];
+      if(!m.bad[a.id]){rec(a.f.a,a.f.b,true);D.stars++;G.gained++;save()}
+      sndOk();confetti(30);G.locked=false;matchDraw();$('#msg').textContent=praise();sayZh(kj(a.f.a,a.f.b));
+      if(m.done===m.total){G.locked=true;G.first++;G.i++;sndWin();confetti(100);setTimeout(function(){if(view==='quiz')quizQ()},1800)}}
+    else{sndNo();[a,b].forEach(function(x){if(x.side==='eq'&&!m.bad[x.id]){m.bad[x.id]=1;rec(x.f.a,x.f.b,false)}});
+      $('#msg').textContent=tryag();setTimeout(function(){m.open=[];G.locked=false;if(view==='quiz')matchDraw()},900)}}}
+
+function finish(){var n=G.types.length,bonus=0;
+  if(G.first===n&&n>=3){bonus=3;D.stars+=3;G.gained+=3}
+  save();view='result';sndWin();confetti(160);render()}
+function result(){var n=G.types.length,p=G.first/n,face=p>=.9?'🏆':p>=.6?'🎉':'💪';
+  app.innerHTML=topbar(false)+'<div class="hero pop">'+face+'</div><h1>'+(p>=.9?'太厲害了！':p>=.6?'表現很棒！':'再接再厲！')+'</h1>'+
+  '<div class="card mid" style="font-size:30px">第一次就答對：<b>'+G.first+' / '+n+'</b><br>這次獲得：<b style="color:#e08a00">⭐ '+G.gained+'</b>'+(G.first===n&&n>=3?'<br>全對獎勵 +3 ⭐':'')+
+  (p>=.6?'<div style="margin-top:10px;color:#e0561f">'+VB[rnd(VB.length)]+'</div>':'')+'</div>'+
+  '<div class="grid g2"><button class="btn green" data-a="again">🔁 再玩一次</button><button class="btn blue" data-a="home">🏠 回首頁</button></div>'}
+
+/* ---------- 60 秒挑戰 ---------- */
+var TM=null;
+function stopTimer(){if(TM&&TM.iv){clearInterval(TM.iv);TM.iv=null}}
+function startTimed(){G={g:'timed',pool:poolOf(D.sel),recent:[],requeue:[],i:0,types:[1]};TM={left:60,score:0,wrong:0,key:selKey(D.sel),end:now()+60000,iv:null,cd:3};view='timed';
+  app.innerHTML=topbar(false)+'<div class="hero pop" id="cd">3</div><div class="mid">準備好了嗎？'+esc(selName(D.sel))+'</div>';
+  sndTick();var iv=setInterval(function(){if(view!=='timed'){clearInterval(iv);return}TM.cd--;
+    if(TM.cd>0){$('#cd').textContent=TM.cd;sndTick()}else{clearInterval(iv);TM.end=now()+60000;TM.iv=setInterval(tick,200);tQ()}},800)}
+function tick(){if(view!=='timed'){stopTimer();return}var l=Math.max(0,Math.ceil((TM.end-now())/1000));
+  if(l!==TM.left){TM.left=l;var e=$('#tleft');if(e)e.textContent=l;if(l<=5&&l>0)sndTick()}
+  if(now()>=TM.end){stopTimer();timedEnd()}}
+function tQ(){var f=pickFact(G.pool,G.recent);G.recent.push(fk(f.a,f.b));if(G.recent.length>4)G.recent.shift();
+  G.f=f;G.inp='';G.target=f.a*f.b;G.miss=false;G.locked=false;G.t0=now();
+  app.innerHTML='<div class="top"><button class="btn small gray" data-a="quit">✕ 結束</button><div class="stars">✅ '+TM.score+'</div></div>'+
+  '<div class="timer">⏱️ <span id="tleft">'+TM.left+'</span></div><div class="q" id="qline"></div><div class="hint" id="hint"></div>'+padHtml()+'<div class="msg" id="msg"></div>';
+  fillDraw()}
+function tKey(k){if(G.locked)return;
+  if(k==='del'){G.inp=G.inp.slice(0,-1);fillDraw();return}
+  if(k==='ok'){if(G.inp)tCheck();return}
+  if(G.inp.length>=2)return;G.inp+=k;sndTap();fillDraw();
+  if(+G.inp===G.target||G.inp.length>=2)tCheck()}
+function tCheck(){var f=G.f;
+  if(+G.inp===G.target){rec(f.a,f.b,true,now()-G.t0);TM.score++;sndOk();G.locked=true;fillDraw(true);
+    if(TM.score%5===0)confetti(40);setTimeout(function(){if(view==='timed'&&TM.iv)tQ()},280)}
+  else{rec(f.a,f.b,false);TM.wrong++;sndNo();G.locked=true;$('#hint').textContent='答案是 '+G.target+'（'+kj(f.a,f.b)+'）';
+    setTimeout(function(){if(view==='timed'&&TM.iv)tQ()},1300)}}
+function timedEnd(){var old=D.best[TM.key]||0,nb=TM.score>old,gain=Math.floor(TM.score/3);
+  if(nb)D.best[TM.key]=TM.score;D.stars+=gain;save();view='tresult';sndWin();confetti(nb?220:120);
+  app.innerHTML=topbar(false)+'<div class="hero pop">'+(nb?'🏆':'⏱️')+'</div><h1>'+(nb?'新紀錄！':'時間到！')+'</h1>'+
+  '<div class="card mid" style="font-size:30px">'+esc(selName(D.sel))+'<br>60 秒答對 <b style="font-size:44px;color:#1f9d55">'+TM.score+'</b> 題'+(TM.wrong?'，答錯 '+TM.wrong+' 題':'')+
+  '<br>最佳紀錄：<b>'+Math.max(old,TM.score)+'</b> 題'+(gain?'<br>獲得 ⭐ '+gain:'')+'<div style="margin-top:10px;color:#e0561f">'+(nb?'飛吧！你又變強了！🏐':VB[rnd(VB.length)])+'</div></div>'+
+  '<div class="grid g2"><button class="btn orange" data-a="timedagain">🔁 再挑戰一次</button><button class="btn blue" data-a="home">🏠 回首頁</button></div>'}
+
+/* ---------- 手寫答案（兩格：十位、個位） ---------- */
+function hwInit(){var f=G.f;G.hw={cells:[{s:[],cur:null,pid:null},{s:[],cur:null,pid:null}],phase:'write'};
+  hwDraw();autoSay(eqSpeech(f.a,f.b,true))}
+function hwOn(){return D.hwOcr!==false&&DR.state!=='fail'}
+function hwDraw(){var f=G.f;G.hw.phase='write';
+  app.innerHTML=qHead()+'<div class="mid">✍️ 把答案寫在格子裡 '+sayBtn()+'</div><div class="q" style="font-size:60px">'+f.a+' × '+f.b+' = ?</div><div class="hint" id="hint"></div>'+
+  '<div class="hwcells"><div class="hwcell"><span class="hwlab">十位</span><canvas id="hw0"></canvas></div><div class="hwcell"><span class="hwlab">個位</span><canvas id="hw1"></canvas></div></div>'+
+  '<div class="mid" style="font-size:17px;margin-top:6px">一個數字寫一格；答案只有一位數，就寫在「個位」</div>'+
+  '<div class="hwtools"><button class="btn small gray" data-a="hwundo">↩️ 復原一筆</button><button class="btn small gray" data-a="hwclear">🧽 全部清除</button><button class="btn small yellow" data-a="hwhint">💡 提示</button></div>'+
+  (hwOn()?'<button class="btn green" style="margin-top:12px;width:100%" data-a="hwdone">✅ 寫好了</button><button class="btn small gray" style="margin-top:8px;width:100%" data-a="hwself">👀 我自己對答案</button><div class="hwst" id="hwst"></div>'
+  :'<button class="btn green" style="margin-top:12px;width:100%" data-a="hwself">👀 看答案</button>')+
+  '<label class="hwpen"><input type="checkbox" id="penonly"'+(D.penOnly?' checked':'')+'> 只用 Apple Pencil 寫（手掌碰到螢幕不會亂畫）</label><div class="msg" id="msg"></div>';
+  hwSetup(0);hwSetup(1);DR.status()}
+function hwSize(){var side=Math.round(Math.max(150,Math.min(300,(Math.min(innerWidth,980)-80)/2,innerHeight*0.32)));return side}
+function hwSetup(k){var c=$('#hw'+k),cell=G.hw.cells[k],S=hwSize(),dpr=Math.min(window.devicePixelRatio||1,3);
+  c.style.width=S+'px';c.style.height=S+'px';c.width=Math.round(S*dpr);c.height=Math.round(S*dpr);cell.S=S;cell.dpr=dpr;hwRedraw(k);
+  function pt(e){var r=c.getBoundingClientRect();return [(e.clientX-r.left)/S,(e.clientY-r.top)/S]}
+  function end(e){if(cell.pid!==e.pointerId)return;if(cell.cur){if(cell.cur.length)cell.s.push(cell.cur);cell.cur=null;G.hw.order=(G.hw.order||[]).concat([k])}cell.pid=null;hwRedraw(k)}
+  c.addEventListener('pointerdown',function(e){e.preventDefault();if(G.locked||G.hw.phase!=='write')return;
+    if(e.pointerType==='touch'&&D.penOnly)return;
+    if(cell.pid!==null){if(e.pointerType==='pen'&&cell.ptype!=='pen'){cell.cur=null}else return}
+    cell.pid=e.pointerId;cell.ptype=e.pointerType;try{c.setPointerCapture(e.pointerId)}catch(x){}
+    cell.cur=[pt(e)];hwRedraw(k)});
+  c.addEventListener('pointermove',function(e){if(cell.pid!==e.pointerId||!cell.cur)return;e.preventDefault();
+    var evs=(e.getCoalescedEvents&&e.getCoalescedEvents())||[];if(!evs.length)evs=[e];
+    evs.forEach(function(ev){var p=pt(ev),l=cell.cur[cell.cur.length-1];if((Math.abs(p[0]-l[0])+Math.abs(p[1]-l[1]))*S>1.5)cell.cur.push(p)});hwRedraw(k)});
+  c.addEventListener('pointerup',end);c.addEventListener('pointercancel',end);
+  ['touchstart','touchmove','gesturestart'].forEach(function(n){c.addEventListener(n,function(e){e.preventDefault()},{passive:false})})}
+function hwPaint(ctx,strokes,S,lw,col){ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';ctx.lineJoin='round';
+  strokes.forEach(function(s){if(!s.length)return;ctx.beginPath();
+    if(s.length===1){ctx.arc(s[0][0]*S,s[0][1]*S,lw/2,0,6.2832);ctx.fill();return}
+    ctx.moveTo(s[0][0]*S,s[0][1]*S);for(var i=1;i<s.length-1;i++){var mx=(s[i][0]+s[i+1][0])/2,my=(s[i][1]+s[i+1][1])/2;ctx.quadraticCurveTo(s[i][0]*S,s[i][1]*S,mx*S,my*S)}
+    ctx.lineTo(s[s.length-1][0]*S,s[s.length-1][1]*S);ctx.stroke()})}
+function hwStrokesOf(k){var c=G.hw.cells[k],a=c.s.slice();if(c.cur)a.push(c.cur);return a}
+function hwRedraw(k){var c=$('#hw'+k);if(!c||!G||!G.hw)return;var cell=G.hw.cells[k],S=cell.S,ctx=c.getContext('2d');
+  ctx.setTransform(cell.dpr,0,0,cell.dpr,0,0);ctx.clearRect(0,0,S,S);
+  ctx.strokeStyle='#f3e2cf';ctx.lineWidth=1.5;ctx.setLineDash([8,8]);ctx.beginPath();ctx.moveTo(S/2,12);ctx.lineTo(S/2,S-12);ctx.moveTo(12,S/2);ctx.lineTo(S-12,S/2);ctx.stroke();ctx.setLineDash([]);
+  if(G.hw.trace!==undefined&&G.hw.trace!==null){var d=String(G.f.a*G.f.b),ch=d.length===2?d[k]:(k===1?d:'');if(ch){ctx.font='800 '+Math.round(S*0.8)+'px ui-rounded,"Arial Rounded MT Bold",sans-serif';ctx.fillStyle='rgba(255,138,31,.22)';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ch,S/2,S/2+S*0.04)}}
+  hwPaint(ctx,hwStrokesOf(k),S,Math.max(7,S/22),'#2b2250')}
+function hwSnap(){var S=150,cv=document.createElement('canvas');cv.width=S*2+10;cv.height=S;var x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,S);
+  x.strokeStyle='#ffd2a8';x.lineWidth=2;x.strokeRect(1,1,S-2,S-2);x.strokeRect(S+11,1,S-2,S-2);
+  hwPaint(x,G.hw.cells[0].s,S,7,'#2b2250');x.save();x.translate(S+10,0);hwPaint(x,G.hw.cells[1].s,S,7,'#2b2250');x.restore();return cv.toDataURL('image/png')}
+function hwEmpty(){return !G.hw.cells[0].s.length&&!G.hw.cells[1].s.length}
+function hwSelf(note){if(hwEmpty()){toast('先在格子裡寫寫看喔 ✍️');return}
+  var f=G.f;G.hw.phase='check';G.hw.img=hwSnap();
+  app.innerHTML=qHead()+'<div class="mid">'+(note||'對一對，你寫對了嗎？')+'</div><div class="grid g2"><div class="card mid">正確答案<div class="q" style="margin:6px 0">'+f.a+' × '+f.b+' = <span class="box ok">'+(f.a*f.b)+'</span></div>'+kj(f.a,f.b)+'</div>'+
+  '<div class="card mid">你寫的<img class="hwimg" alt="你寫的答案" src="'+G.hw.img+'"></div></div>'+
+  '<div class="grid g2"><button class="btn green" data-a="hwok">✅ 我寫對了</button><button class="btn yellow" data-a="hwretry">🔁 再練習</button></div><div class="msg" id="msg"></div>';
+  sayZh(kj(f.a,f.b))}
+function hwDone(){if(hwEmpty()){toast('先在格子裡寫寫看喔 ✍️');return}
+  if(!hwOn()||DR.state!=='ready')return hwSelf();
+  var r;try{r=DR.readCells([hwStrokesOf(0),hwStrokesOf(1)],String(G.f.a*G.f.b))}catch(e){r=null}
+  if(!r||!r.text)return hwSelf('我看不太清楚，請你自己對一對 😊');
+  var f=G.f,ans=String(f.a*f.b),img=hwSnap();G.hw.img=img;G.hw.rec=r.text;
+  if(r.match){r.text=ans;G.hw.phase='done';
+    app.innerHTML=qHead()+'<div class="q" style="font-size:60px">'+f.a+' × '+f.b+' = <span class="box ok">'+ans+'</span></div><div class="card mid"><img class="hwimg" alt="" src="'+img+'"><div style="margin-top:6px">🤖 我看到你寫的是「<b>'+esc(r.text)+'</b>」</div></div><div class="msg pop" id="msg" style="color:#1f9d55">完全正確！</div>';
+    G.locked=true;right();return}
+  if(r.conf>=0.8){G.hw.phase='check';
+    app.innerHTML=qHead()+'<div class="q" style="font-size:60px">'+f.a+' × '+f.b+' = ?</div><div class="card mid"><img class="hwimg" alt="" src="'+img+'"><div style="margin-top:6px;font-size:26px">🤖 我看到你寫的是「<b>'+esc(r.text)+'</b>」</div></div>'+
+    '<div class="grid g2"><button class="btn yellow" data-a="hwwrong">👍 對，我寫的是 '+esc(r.text)+'</button><button class="btn gray" data-a="hwmis">🙅 不是，你看錯了</button></div><div class="msg" id="msg"></div>';
+    return}
+  hwSelf('我看不太清楚，請你自己對一對 😊')}
+function hwOk(){if(G.locked)return;G.locked=true;right()}
+function hwRetry(showAns){if(G.locked)return;wrongOnce();
+  G.hw.cells.forEach(function(c){c.s=[];c.cur=null;c.pid=null});G.hw.trace=1;hwDraw();
+  var f=G.f;$('#hint').textContent='💡 '+kj(f.a,f.b)+'，描描看再寫一次';sayZh(kj(f.a,f.b))}
+function hwHint(){if(G.locked||!G.hw)return;wrongOnce();G.hw.trace=1;hwRedraw(0);hwRedraw(1);var f=G.f;$('#hint').textContent='💡 口訣：'+kj(f.a,f.b);sayZh(kj(f.a,f.b))}
+
+/* 數字辨識（小型神經網路，iPad 上離線執行） */
+var DR={state:'idle',W:null,
+  ensure:function(){if(DR.state!=='idle')return;DR.state='loading';
+    if(!window.fetch||!window.Float32Array){DR.fail();return}
+    var tm=setTimeout(function(){if(DR.state==='loading')DR.fail()},25000);
+    fetch('digits.bin').then(function(r){if(!r.ok)throw 0;return r.arrayBuffer()}).then(function(buf){clearTimeout(tm);DR.parse(buf);DR.state='ready';DR.status()}).catch(function(){clearTimeout(tm);DR.fail()})},
+  fail:function(){DR.state='fail';DR.status();if(view==='quiz'&&G&&G.hw&&G.hw.phase==='write'){/* 改成自己對答案 */var b=document.querySelector('[data-a="hwdone"]');if(b){b.style.display='none'}}},
+  status:function(){var el=$('#hwst');if(!el)return;el.textContent=DR.state==='ready'?'🤖 自動辨識已就緒':DR.state==='loading'?'🤖 辨識功能準備中…（也可以按「我自己對答案」）':DR.state==='fail'?'辨識功能暫時不能用，請按「我自己對答案」':''},
+  parse:function(buf){var h=new Uint16Array(buf),f=new Float32Array(h.length);
+    for(var i=0;i<h.length;i++){var x=h[i],s=x&0x8000?-1:1,e=(x>>10)&31,m=x&1023;f[i]=e===0?s*m*Math.pow(2,-24):e===31?0:s*(1+m/1024)*Math.pow(2,e-15)}
+    var o=0;function take(n){var a=f.subarray(o,o+n);o+=n;return a}
+    DR.W={c1w:take(16*9),c1b:take(16),c2w:take(32*16*9),c2b:take(32),f1w:take(64*1568),f1b:take(64),f2w:take(640),f2b:take(10)};
+    if(o!==f.length)throw new Error('size')},
+  conv:function(inp,C,H,w,b,O){var out=new Float32Array(O*H*H);
+    for(var oc=0;oc<O;oc++)for(var y=0;y<H;y++)for(var x=0;x<H;x++){var s=b[oc];
+      for(var ic=0;ic<C;ic++)for(var ky=-1;ky<=1;ky++){var yy=y+ky;if(yy<0||yy>=H)continue;for(var kx=-1;kx<=1;kx++){var xx=x+kx;if(xx<0||xx>=H)continue;s+=inp[(ic*H+yy)*H+xx]*w[((oc*C+ic)*3+ky+1)*3+kx+1]}}
+      out[(oc*H+y)*H+x]=s>0?s:0}return out},
+  pool:function(inp,C,H){var h=H/2,out=new Float32Array(C*h*h);for(var c=0;c<C;c++)for(var y=0;y<h;y++)for(var x=0;x<h;x++){var i=(c*H+y*2)*H+x*2;out[(c*h+y)*h+x]=Math.max(inp[i],inp[i+1],inp[i+H],inp[i+H+1])}return out},
+  forward:function(img){var W=DR.W,a=DR.pool(DR.conv(img,1,28,W.c1w,W.c1b,16),16,28);a=DR.pool(DR.conv(a,16,14,W.c2w,W.c2b,32),32,14);
+    var h=new Float32Array(64),i,j;for(i=0;i<64;i++){var s=W.f1b[i];for(j=0;j<1568;j++)s+=W.f1w[i*1568+j]*a[j];h[i]=s>0?s:0}
+    var z=[],mx=-1e9;for(i=0;i<10;i++){var t=W.f2b[i];for(j=0;j<64;j++)t+=W.f2w[i*64+j]*h[j];z.push(t);if(t>mx)mx=t}
+    var sum=0;z=z.map(function(v){v=Math.exp(v-mx);sum+=v;return v});return z.map(function(v){return v/sum})},
+  /* 筆畫 → 28x28（外框最長邊約 20px、置中），與訓練資料前處理一致 */
+  image:function(strokes){var pts=[];strokes.forEach(function(s){s.forEach(function(p){pts.push(p)})});if(!pts.length)return null;
+    var x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;pts.forEach(function(p){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1])});
+    var bw=x1-x0,bh=y1-y0,Z=4,N=28*Z,lw=2.6*Z,k=(20*Z-lw)/Math.max(bw,bh,0.04);
+    if(Math.max(bw,bh)<0.04)k=(6*Z)/0.04;
+    var ox=N/2-(x0+bw/2)*k,oy=N/2-(y0+bh/2)*k;
+    var cv=document.createElement('canvas');cv.width=N;cv.height=N;var c=cv.getContext('2d');c.fillStyle='#000';c.fillRect(0,0,N,N);
+    c.strokeStyle='#fff';c.fillStyle='#fff';c.lineWidth=lw;c.lineCap='round';c.lineJoin='round';
+    strokes.forEach(function(s){if(!s.length)return;c.beginPath();c.moveTo(s[0][0]*k+ox,s[0][1]*k+oy);if(s.length===1)c.lineTo(s[0][0]*k+ox+0.5,s[0][1]*k+oy);for(var i=1;i<s.length;i++)c.lineTo(s[i][0]*k+ox,s[i][1]*k+oy);c.stroke()});
+    var sm=document.createElement('canvas');sm.width=28;sm.height=28;var s2=sm.getContext('2d');s2.imageSmoothingEnabled=true;try{s2.imageSmoothingQuality='high'}catch(e){}s2.drawImage(cv,0,0,28,28);
+    var d=s2.getImageData(0,0,28,28).data,o=new Float32Array(784);for(var i=0;i<784;i++)o[i]=d[i*4]/255;return o},
+  /* ans：正確答案字串。某一格的最高分就是答案數字，或答案數字的機率至少 0.2（例如有小勾的 1 容易像 7），就算看到答案 */
+  readCells:function(cells,ans){var txt='',conf=1,probs=[];
+    for(var k=0;k<2;k++){if(!cells[k].length)continue;var im=DR.image(cells[k]);if(!im)continue;var p=DR.forward(im),best=0;for(var i=1;i<10;i++)if(p[i]>p[best])best=i;
+      txt+=best;conf=Math.min(conf,p[best]);probs.push(p)}
+    var match=false;ans=String(ans||'');
+    if(probs.length&&probs.length===ans.length){match=true;for(var j=0;j<ans.length;j++){var dg=+ans[j];if(!(probs[j][dg]>=0.2||String(txt[j])===ans[j]))match=false}}
+    if(txt.length===2&&txt[0]==='0')txt=txt.slice(1);
+    return {text:txt,conf:txt?conf:0,probs:probs,match:match}}};
+
+/* ---------- 熟練度表與家長設定 ---------- */
+function heat(settings){
+  var h=topbar(true)+'<h2>📊 熟練度表（給爸媽看）</h2><div class="card"><div class="mid" style="font-size:18px">每一格是一題（列＝幾的乘法表，欄＝乘以幾），點格子看詳細紀錄</div><div class="heat"><div class="hd">×</div>';
+  for(var b=1;b<=9;b++)h+='<div class="hd">'+b+'</div>';
+  var cnt=[0,0,0,0,0,0];
+  for(var a=1;a<=9;a++){h+='<div class="hd">'+a+'</div>';for(b=1;b<=9;b++){var lv=level(a,b),s=D.stats[fk(a,b)];if(a>=2)cnt[lv]++;
+    h+='<div class="lv'+lv+'" data-a="cell" data-n="'+a+'" data-m="'+b+'">'+(a*b)+(s&&s.c+s.w?'<small>'+Math.round(acc(s)*100)+'%</small>':'')+'</div>'}}
+  h+='</div><div class="legend">'+LVN.map(function(n,i){return '<span class="lv'+i+'">'+n+'</span>'}).join('')+'</div>'+
+  '<div class="mid" style="font-size:18px;margin-top:8px">2～9 的乘法表：熟練 '+cnt[5]+'、會了 '+cnt[4]+'、快會了 '+cnt[3]+'、加強中 '+cnt[2]+'、很需要加強 '+cnt[1]+'、還沒練過 '+cnt[0]+'</div>'+
+  '<div class="mid" style="font-size:16px;color:#8e8aa5">「熟練」＝至少答對 5 次、最近 4 次都對、平均 5 秒內；「會了」＝最近 3 次都對</div></div>';
+  var weak=[];for(a=1;a<=9;a++)for(b=1;b<=9;b++){var st=D.stats[fk(a,b)];if(st&&st.w>0)weak.push({a:a,b:b,s:st,p:acc(st)})}
+  weak.sort(function(x,y){return x.p-y.p||y.s.w-x.s.w});
+  h+='<div class="card"><b>最需要加強的題目</b><div style="font-size:22px;margin-top:8px">'+(weak.length?weak.slice(0,8).map(function(x){return x.a+'×'+x.b+'='+(x.a*x.b)+'（'+Math.round(x.p*100)+'%）'}).join('、'):'還沒有答錯的紀錄 👍')+'</div></div>';
+  var bk=Object.keys(D.best);
+  h+='<div class="card"><b>⏱️ 60 秒挑戰最佳紀錄</b><div style="font-size:22px;margin-top:8px">'+(bk.length?bk.map(function(k){return esc(selName(k.split('').map(Number)))+'：'+D.best[k]+' 題'}).join('<br>'):'還沒有紀錄')+'</div></div>';
+  h+='<div class="card" id="settings"><b>⚙️ 家長設定</b>'+
+  '<label class="set"><input type="checkbox" id="s_slow"'+(D.slow?' checked':'')+'>🐢 慢速朗讀</label>'+
+  '<label class="set"><input type="checkbox" id="s_auto"'+(D.autoSay!==false?' checked':'')+'>🔊 出題時自動唸題目</label>'+
+  '<label class="set"><input type="checkbox" id="s_sound"'+(D.sound!==false?' checked':'')+'>🎵 音效</label>'+
+  '<label class="set"><input type="checkbox" id="s_hw"'+(D.hwOcr!==false?' checked':'')+'>🤖 手寫數字自動辨識（在 iPad 上離線辨識；不確定時改成自己對答案）</label>'+
+  '<div style="margin-top:12px"><button class="btn small blue" data-a="testvoice">🔊 試聽口訣</button> <button class="btn small red" data-a="resetstats">清除所有紀錄與星星</button></div></div>';
+  app.innerHTML=h;
+  if(settings===true){var el=$('#settings');if(el)setTimeout(function(){el.scrollIntoView({block:'start'})},50)}}
+function cellInfo(a,b){var s=D.stats[fk(a,b)],t=a+' × '+b+' = '+(a*b)+'（'+kj(a,b)+'）\n';
+  if(!s||s.c+s.w===0)t+='還沒練過';else{var sec=avgSec(s);t+='答對 '+s.c+' 次、答錯 '+s.w+' 次，正確率 '+Math.round(acc(s)*100)+'%'+(sec!==null?'，平均 '+sec.toFixed(1)+' 秒':'')+'\n最近：'+String(s.h||'').split('').map(function(c){return c==='1'?'⭕':'❌'}).join('')+'\n程度：'+LVN[level(a,b)]}
+  notice(esc(t).replace(/\n/g,'<br>'))}
+
+/* ---------- 匯出／匯入 ---------- */
+function ioView(){
+  app.innerHTML=topbar(true)+'<h2>📦 匯出／匯入（搬到另一台 iPad 或備份）</h2>'+
+  '<div class="card"><b>匯出</b><div class="row" style="margin:10px 0"><button class="btn blue" data-a="exportfile">💾 下載 JSON 檔</button><button class="btn purple" data-a="exportcopy">📋 複製文字代碼</button></div>'+
+  '<textarea id="code" readonly placeholder="按「複製文字代碼」後會顯示在這裡"></textarea></div>'+
+  '<div class="card"><b>匯入</b><p class="mid" style="text-align:left;font-size:20px">選擇 JSON 檔，或把文字代碼貼到下面。「合併」會保留兩邊練習比較多的紀錄。</p>'+
+  '<input type="file" id="file" accept=".json,application/json,text/plain" style="font-size:18px;margin-bottom:10px">'+
+  '<textarea id="paste" placeholder="在此貼上文字代碼"></textarea>'+
+  '<div class="row" style="margin-top:10px"><button class="btn green" data-a="import" data-m="merge">合併匯入</button><button class="btn red" data-a="import" data-m="replace">取代全部資料</button></div></div>'}
+function exportText(){return JSON.stringify({app:'times',exported:new Date().toISOString(),data:D})}
+function doImport(txt,mode){var o;try{o=JSON.parse(String(txt).trim())}catch(e){toast('格式不正確，請確認內容完整');return}
+  if(o&&o.app==='times'&&o.data)o=o.data;
+  if(!o||typeof o.stats!=='object'||o.stats===null){toast('這不是九九乘法的資料');return}
+  var okKey=/^[1-9]x[1-9]$/,clean={};Object.keys(o.stats).forEach(function(k){var s=o.stats[k];if(okKey.test(k)&&s&&typeof s==='object')clean[k]={c:+s.c||0,w:+s.w||0,h:String(s.h||'').replace(/[^01]/g,'').slice(-6),ms:+s.ms||0,mn:+s.mn||0,t:+s.t||0}});
+  if(mode==='replace'){if(!confirm('確定要用匯入的資料取代目前全部資料嗎？'))return;
+    var keep=blank();keep.stats=clean;keep.stars=+o.stars||0;keep.best=(o.best&&typeof o.best==='object')?o.best:{};
+    ['sel','slow','autoSay','sound','hwOcr','penOnly'].forEach(function(k){if(o[k]!==undefined)keep[k]=o[k]});D=keep}
+  else{Object.keys(clean).forEach(function(k){var a=D.stats[k],b=clean[k];if(!a||(b.c+b.w)>(a.c+a.w))D.stats[k]=b});
+    D.stars=Math.max(D.stars,+o.stars||0);var bb=o.best||{};Object.keys(bb).forEach(function(k){if(/^[1-9]+$/.test(k))D.best[k]=Math.max(D.best[k]||0,+bb[k]||0)})}
+  load2();save();toast('匯入成功！');go('home')}
+function load2(){var b=blank();for(var k in b)if(D[k]===undefined)D[k]=b[k];if(!Array.isArray(D.sel)||!D.sel.length)D.sel=b.sel.slice()}
+
+/* ---------- 事件 ---------- */
+document.addEventListener('click',function(e){
+  var el=e.target.closest('[data-a]');if(!el)return;var a=el.dataset.a;ac();
+  switch(a){
+    case 'closenotice':$('#notice').style.display='none';break;
+    case 'home':go('home');break;
+    case 'learn':L={shown:0,play:false,cur:0};go('learn');break;
+    case 'menu':go('menu');break;
+    case 'heat':hush();view='heat';heat(!!el.dataset.s);window.scrollTo(0,0);break;
+    case 'io':go('io');break;
+    case 'lsel':hush();D.learnA=+el.dataset.n;save();L={shown:0,play:false,cur:0};learn();break;
+    case 'lplay':lPlay();break;
+    case 'lnext':if(L.play){L.play=false;hush()}if(L.shown<9){lSay(L.shown+1)}else{toast('背完了！按「蓋起來重背」再來一次');sndWin();confetti(50)}break;
+    case 'lall':L.play=false;hush();L.shown=9;L.cur=0;learn();break;
+    case 'lreset':L={shown:0,play:false,cur:0};hush();learn();break;
+    case 'lrow':if(L.play){L.play=false;hush()}lSay(+el.dataset.n);break;
+    case 'lmode':D.learnMode=el.dataset.m;save();learn();sayZh(lText(D.learnA,3));break;
+    case 'lslow':D.slow=!D.slow;save();learn();break;
+    case 'practice':D.sel=[+el.dataset.n];save();startQuiz('mix');break;
+    case 'timedone':D.sel=[+el.dataset.n];save();startTimed();break;
+    case 'timedgo':go('menu');setTimeout(function(){toast('選好乘法表後，按最下面的「60 秒挑戰」')},100);break;
+    case 'msel':{var n=+el.dataset.n,i=D.sel.indexOf(n);if(i>=0){if(D.sel.length>1)D.sel.splice(i,1);else toast('至少要選一個喔')}else D.sel.push(n);D.sel.sort();save();sndTap();menu();break}
+    case 'mall':D.sel=el.dataset.m==='1'?[1,2,3,4,5,6,7,8,9]:[2,3,4,5,6,7,8,9];save();menu();break;
+    case 'start':startQuiz(el.dataset.g);break;
+    case 'again':startQuiz(G.g);break;
+    case 'timedagain':startTimed();break;
+    case 'quit':if(confirm('要結束這次挑戰嗎？')){stopTimer();G=null;go('home')}break;
+    case 'qsay':qSay();break;
+    case 'ans':onAns(+el.dataset.i);break;
+    case 'key':if(view==='timed')tKey(el.dataset.k);else onKey(el.dataset.k);break;
+    case 'flip':onFlip(+el.dataset.i);break;
+    case 'hwundo':if(G&&G.hw&&!G.locked){var od=G.hw.order||[];var kk=od.pop();if(kk!==undefined){G.hw.cells[kk].s.pop();hwRedraw(kk)}}break;
+    case 'hwclear':if(G&&G.hw&&!G.locked){G.hw.cells.forEach(function(c){c.s=[];c.cur=null});G.hw.order=[];hwRedraw(0);hwRedraw(1)}break;
+    case 'hwhint':hwHint();break;
+    case 'hwdone':hwDone();break;
+    case 'hwself':hwSelf();break;
+    case 'hwok':hwOk();break;
+    case 'hwmis':hwSelf('對不起看錯了 🙏 請你自己對一對');break;
+    case 'hwwrong':case 'hwretry':hwRetry();break;
+    case 'cell':cellInfo(+el.dataset.n,+el.dataset.m);break;
+    case 'testvoice':sayZh('二二得四，三四十二，二五一十，九九八十一');break;
+    case 'resetstats':if(confirm('確定清除所有答題紀錄、最佳紀錄與星星？')){D.stats={};D.best={};D.stars=0;save();heat()}break;
+    case 'exportfile':{var blob=new Blob([exportText()],{type:'application/json'}),u=URL.createObjectURL(blob),l=document.createElement('a');
+      l.href=u;l.download='times-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(l);l.click();l.remove();
+      setTimeout(function(){URL.revokeObjectURL(u)},4000);toast('若沒有下載，請改用「複製文字代碼」');break}
+    case 'exportcopy':{var t=exportText(),ta=$('#code');ta.value=t;ta.removeAttribute('readonly');ta.focus();ta.select();ta.setSelectionRange(0,t.length);
+      var ok=false;try{ok=document.execCommand('copy')}catch(x){}
+      if(!ok&&navigator.clipboard)navigator.clipboard.writeText(t).then(function(){toast('已複製')},function(){});
+      ta.setAttribute('readonly','');toast(ok?'已複製！到另一台貼上即可':'請長按文字全選後拷貝');break}
+    case 'import':{var txt=$('#paste').value;if(txt.trim()){doImport(txt,el.dataset.m)}
+      else{var f=$('#file').files[0];if(!f){toast('請選擇檔案或貼上代碼');return}var r=new FileReader();r.onload=function(){doImport(String(r.result),el.dataset.m)};r.readAsText(f)}break}
+  }
+});
+document.addEventListener('change',function(e){var id=e.target.id,v=e.target.checked;
+  if(id==='penonly'){D.penOnly=v;save();toast(v?'只有 Apple Pencil 會寫字':'手指和筆都可以寫')}
+  else if(id==='s_slow'){D.slow=v;save();sayZh('三四十二')}
+  else if(id==='s_auto'){D.autoSay=v;save()}
+  else if(id==='s_sound'){D.sound=v;save();if(v)sndOk()}
+  else if(id==='s_hw'){D.hwOcr=v;save();toast(v?'手寫自動辨識：開':'手寫自動辨識：關')}});
+document.addEventListener('keydown',function(e){if((view==='quiz'&&G&&G.types[G.i]==='fill')||view==='timed'){var k=e.key;
+  if(/^[0-9]$/.test(k))(view==='timed'?tKey:onKey)(k);else if(k==='Backspace')(view==='timed'?tKey:onKey)('del');else if(k==='Enter')(view==='timed'?tKey:onKey)('ok')}});
+window.addEventListener('resize',function(){var c=$('#fx');c.width=innerWidth;c.height=innerHeight});
+
+window.__times={kj:kj,zhNum:zhNum,eqSpeech:eqSpeech,level:level,DR:DR,D:function(){return D},G:function(){return G},startQuiz:startQuiz,go:go};
+load();render();
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+})();
+</script>
+</body>
+</html>
