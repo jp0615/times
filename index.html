@@ -85,6 +85,24 @@ h2{font-size:28px;margin:8px 0}
 .set{display:block;font-size:22px;padding:10px 0;border-bottom:1px dashed #f1dcc4}.set input{width:24px;height:24px;vertical-align:middle;margin-right:8px}
 textarea{width:100%;font-size:18px;padding:12px;border:3px solid #ffd2a8;border-radius:16px;font-family:inherit;background:#fff;color:#3a2e5a;min-height:110px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}
+.wide #app{max-width:none;padding:calc(env(safe-area-inset-top) + 6px) 10px calc(env(safe-area-inset-bottom) + 6px)}
+.chbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.chbar h2{margin:0 6px;font-size:24px;flex:1;white-space:nowrap}
+.chbar .chip{height:44px;min-width:auto;padding:0 12px;font-size:17px;border-radius:14px;box-shadow:0 3px 0 #ffd2a8}
+.chbar .chip.on{box-shadow:0 3px 0 #c9620a}
+.chart{display:grid;gap:8px}
+.blk{display:flex;border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 4px 0 rgba(0,0,0,.08);min-height:0}
+.blk .side{display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;cursor:pointer;flex:0 0 auto}
+.blk .side b{font-weight:900;line-height:1;text-shadow:0 2px 0 rgba(0,0,0,.15)}
+.blk .side span{line-height:1.1}
+.blk .rows{flex:1;display:flex;flex-direction:column;justify-content:space-around;padding:2px 8px 2px 10px;min-width:0}
+.crow{display:flex;align-items:center;font-weight:800;white-space:nowrap;cursor:pointer;border-radius:8px;padding:0 4px;line-height:1.15}
+.crow.cur{background:#fff3b0}
+.crow .ans{border-radius:6px;padding:0 3px;margin-left:2px}
+.crow .ans.cov{color:transparent!important;background:#e9e2f7;width:1.9em;overflow:hidden;vertical-align:bottom;display:inline-block;text-align:center;position:relative}
+.chart.kj .crow .ans.cov{width:3.2em}
+.crow .ans.cov:after{content:'?';color:#a39dbb;position:absolute;left:0;right:0}
+.crow .dot{width:.45em;height:.45em;border-radius:50%;margin-left:auto;flex:0 0 auto}
 @keyframes shake{25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
 @keyframes pop{0%{transform:scale(.3);opacity:0}60%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
 .pop{animation:pop .5s}.shake{animation:shake .4s}
@@ -240,6 +258,8 @@ var app=$('#app'),view='home',G=null;
 function topbar(back){return '<div class="top">'+(back?'<button class="btn small gray" data-a="home">🏠 回首頁</button>':'<span></span>')+'<div class="stars">⭐ '+D.stars+'</div></div>'}
 function go(v){hush();stopTimer();view=v;render()}
 function render(){
+  document.body.classList.toggle('wide',view==='chart');
+  if(view==='chart'){chart();window.scrollTo(0,0);return}
   if(view==='home')home();else if(view==='learn')learn();else if(view==='menu')menu();
   else if(view==='quiz')quizQ();else if(view==='result')result();else if(view==='heat')heat();else if(view==='io')ioView();
   window.scrollTo(0,0)}
@@ -250,6 +270,7 @@ function home(){
   '<div class="grid g2" style="margin-top:20px">'+
   '<button class="btn blue" style="font-size:32px;padding:32px" data-a="learn">📖 背口訣</button>'+
   '<button class="btn green" style="font-size:32px;padding:32px" data-a="menu">🎮 開始挑戰</button>'+
+  '<button class="btn teal" style="grid-column:1/-1;font-size:30px;padding:22px" data-a="chart">🗂️ 九九乘法總表</button>'+
   '<button class="btn orange" style="font-size:30px;padding:26px" data-a="timedgo">⏱️ 60 秒挑戰</button>'+
   '<button class="btn purple" style="font-size:30px;padding:26px" data-a="heat">📊 熟練度表</button>'+
   '<button class="btn yellow" data-a="io">📦 匯出／匯入</button>'+
@@ -280,6 +301,48 @@ function lSay(b,done){var a=D.learnA;L.cur=b;if(b>L.shown)L.shown=b;
 function lPlay(){if(L.play){L.play=false;hush();learn();return}
   L.play=true;L.shown=0;learn();var b=1;
   (function step(){if(!L.play||view!=='learn')return;if(b>9){L.play=false;L.cur=0;learn();sndWin();confetti(60);return}lSay(b++,step)})()}
+
+/* ---------- 總表（1～9 九塊） ---------- */
+var CH_COL=['','#ff6b6b','#ff9f43','#f4b400','#2ecc71','#1fb5a8','#3b9cff','#7b61ff','#e0529c','#ee5253'];
+var CH_EMO=['','🐣','🐰','🐱','🐶','🐼','🦊','🐸','🐙','🏐'];
+var CH={open:{},cur:null};
+function chKjParts(a,b){var k=kj(a,b);return [k.slice(0,2),k.slice(2)]}
+function chart(){
+  var mode=D.chMode||'eq',cov=!!D.chCover,dots=!!D.chDots;
+  var h='<div class="chbar"><button class="btn small gray" data-a="home">🏠</button><h2>🗂️ 九九乘法總表</h2>'+
+  '<button class="chip'+(mode==='eq'?' on':'')+'" data-a="chmode" data-m="eq">3 × 4 = 12</button>'+
+  '<button class="chip'+(mode==='kj'?' on':'')+'" data-a="chmode" data-m="kj">三四十二</button>'+
+  '<button class="chip'+(cov?' on':'')+'" data-a="chcov">🙈 蓋住答案</button>'+
+  '<button class="chip'+(dots?' on':'')+'" data-a="chdots">● 熟練度</button></div><div class="chart'+(mode==='kj'?' kj':'')+'" id="chart">';
+  for(var a=1;a<=9;a++){var col=CH_COL[a];
+    h+='<div class="blk" style="background:'+col+'14;border:3px solid '+col+'"><div class="side" style="background:'+col+'" data-a="chblk" data-n="'+a+'"><b>'+a+'</b><span>'+CH_EMO[a]+'</span></div><div class="rows">';
+    for(var b=1;b<=9;b++){var id=a+'x'+b,hid=cov&&!CH.open[id],lv=level(a,b);
+      var body=mode==='kj'?(function(){var pp=chKjParts(a,b);return '<span>'+pp[0]+'</span><span class="ans'+(hid?' cov':'')+'" style="color:'+col+'">'+pp[1]+'</span>'})()
+        :'<span>'+a+' × '+b+' =</span><span class="ans'+(hid?' cov':'')+'" style="color:'+col+'">'+(a*b)+'</span>';
+      h+='<div class="crow'+(CH.cur===id?' cur':'')+'" data-a="chrow" data-n="'+a+'" data-m="'+b+'" id="cr'+id+'">'+body+(dots?'<i class="dot lv'+lv+'" title="'+LVN[lv]+'"></i>':'')+'</div>'}
+    h+='</div></div>'}
+  app.innerHTML=h+'</div>';chFit()}
+/* 依螢幕大小決定欄數與字級：iPad 直橫向都 3×3 一屏看完；手機改 2 欄或 1 欄可捲動 */
+function chFit(){var el=$('#chart');if(!el)return;var W=el.clientWidth,top=el.getBoundingClientRect().top+window.scrollY,H=innerHeight-top-8;
+  var cols=W>=640?3:W>=420?2:1,rows=Math.ceil(9/cols),gap=8;
+  var bh=cols===3?Math.max(150,(H-gap*(rows-1))/rows):Math.max(220,Math.min(320,W/cols*0.9));
+  var bw=(W-gap*(cols-1))/cols;
+  el.style.gridTemplateColumns='repeat('+cols+',1fr)';el.style.gridAutoRows=Math.floor(bh)+'px';
+  var sideW=Math.max(46,Math.min(bw*0.22,bh*0.42));
+  var mode=D.chMode||'eq',chars=mode==='kj'?6:7.6;
+  var fs=Math.min((bh-10)/9*0.78,(bw-sideW-26)/chars,30);fs=Math.max(12,fs);
+  var nodes=el.querySelectorAll('.side');for(var i=0;i<nodes.length;i++){nodes[i].style.width=sideW+'px';nodes[i].firstChild.style.fontSize=Math.min(sideW*0.85,bh*0.38)+'px';nodes[i].lastChild.style.fontSize=Math.min(sideW*0.45,bh*0.18)+'px'}
+  var rs=el.querySelectorAll('.crow');function setFs(f){for(var j=0;j<rs.length;j++)rs[j].style.fontSize=f+'px'}setFs(fs);
+  function over(){for(var j=0;j<rs.length;j++)if(rs[j].scrollWidth>rs[j].clientWidth+1)return true;return false}
+  var n=0;while(fs>12&&over()&&n++<30){fs-=1;setFs(fs)}}
+function chMark(id){var o=document.querySelectorAll('.crow.cur');for(var i=0;i<o.length;i++)o[i].classList.remove('cur');CH.cur=id;var e=id&&document.getElementById('cr'+id);if(e)e.classList.add('cur')}
+function chRow(a,b){var id=a+'x'+b;chMark(id);
+  if(D.chCover&&!CH.open[id]){CH.open[id]=1;var e=document.getElementById('cr'+id);if(e){var s2=e.querySelector('.ans');if(s2)s2.classList.remove('cov')}sndTap()}
+  sp(K(a,b),function(){if(CH.cur===id)chMark(null)})}
+function chBlock(a){var b=1,tok={};CH.tok=tok;
+  (function nx(){if(CH.tok!==tok||view!=='chart')return;if(b>9){chMark(null);return}var id=a+'x'+b;chMark(id);
+    if(D.chCover&&!CH.open[id]){CH.open[id]=1;var e=document.getElementById('cr'+id);if(e){var s2=e.querySelector('.ans');if(s2)s2.classList.remove('cov')}}
+    var bb=b++;sp(K(a,bb),nx)})()}
 
 /* ---------- 選範圍 ---------- */
 function selKey(sel){return sel.slice().sort().join('')}
@@ -620,6 +683,12 @@ document.addEventListener('click',function(e){
     case 'closenotice':$('#notice').style.display='none';break;
     case 'home':go('home');break;
     case 'learn':L={shown:0,play:false,cur:0};go('learn');break;
+    case 'chart':CH={open:{},cur:null};go('chart');break;
+    case 'chmode':D.chMode=el.dataset.m;save();chart();break;
+    case 'chcov':D.chCover=!D.chCover;CH.open={};CH.tok=null;hush();save();chart();break;
+    case 'chdots':D.chDots=!D.chDots;save();chart();break;
+    case 'chrow':CH.tok=null;chRow(+el.dataset.n,+el.dataset.m);break;
+    case 'chblk':chBlock(+el.dataset.n);break;
     case 'menu':go('menu');break;
     case 'heat':hush();view='heat';heat(!!el.dataset.s);window.scrollTo(0,0);break;
     case 'io':go('io');break;
@@ -675,7 +744,7 @@ document.addEventListener('change',function(e){var id=e.target.id,v=e.target.che
   else if(id==='s_hw'){D.hwOcr=v;save();toast(v?'手寫自動辨識：開':'手寫自動辨識：關')}});
 document.addEventListener('keydown',function(e){if((view==='quiz'&&G&&G.types[G.i]==='fill')||view==='timed'){var k=e.key;
   if(/^[0-9]$/.test(k))(view==='timed'?tKey:onKey)(k);else if(k==='Backspace')(view==='timed'?tKey:onKey)('del');else if(k==='Enter')(view==='timed'?tKey:onKey)('ok')}});
-window.addEventListener('resize',function(){var c=$('#fx');c.width=innerWidth;c.height=innerHeight});
+window.addEventListener('resize',function(){var c=$('#fx');c.width=innerWidth;c.height=innerHeight;if(view==='chart')chFit()});
 
 window.__times={kj:kj,zhNum:zhNum,eqSpeech:eqSpeech,level:level,DR:DR,D:function(){return D},G:function(){return G},startQuiz:startQuiz,go:go};
 load();render();
