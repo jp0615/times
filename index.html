@@ -388,7 +388,7 @@ function startQuiz(g){
   for(var i=0;i<N;i++){var t=g;
     if(g==='mix'){var ts=['choice','fill','pattern','choice','fill'];t=ts[rnd(ts.length)];if(i===4&&matchable(pool))t='match';if(i===8&&D.hwOcr!==false&&rnd(2))t='write'}
     types.push(t)}
-  G={g:g,pool:pool,types:types,i:0,first:0,gained:0,recent:[],requeue:[],locked:false};
+  G={g:g,pool:pool,types:types,i:0,first:0,gained:0,recent:[],requeue:[],locked:false,sel:D.sel.slice()};
   if(g==='write'||types.indexOf('write')>=0)DR.ensure();
   view='quiz';quizQ()}
 function matchable(pool){var s={};pool.forEach(function(f){s[f.a*f.b]=1});return Object.keys(s).length>=4}
@@ -477,17 +477,50 @@ function onFlip(i){var m=G.m,c=m.cards[i];if(G.locked||c.done||m.open.indexOf(i)
 
 function finish(){var n=G.types.length,bonus=0;
   if(G.first===n&&n>=3){bonus=3;D.stars+=3;G.gained+=3}
-  save();view='result';sndWin();confetti(160);render();var pp=G.first/n;setTimeout(function(){if(view==='result')sp(C(pp===1?'great':pp>=.6?'ok3':'try1'))},900)}
+  save();view='result';sndWin();confetti(160);render();var pp=G.first/n;setTimeout(function(){if(view==='result')sp(C(pp===1?'great':pp>=.6?'ok3':'try1'))},900);roundDone(G.sel,n,G.g)}
 function result(){var n=G.types.length,p=G.first/n,face=p>=.9?'🏆':p>=.6?'🎉':'💪';
   app.innerHTML=topbar(false)+'<div class="hero pop">'+face+'</div><h1>'+(p>=.9?'太厲害了！':p>=.6?'表現很棒！':'再接再厲！')+'</h1>'+
   '<div class="card mid" style="font-size:30px">第一次就答對：<b>'+G.first+' / '+n+'</b><br>這次獲得：<b style="color:#e08a00">⭐ '+G.gained+'</b>'+(G.first===n&&n>=3?'<br>全對獎勵 +3 ⭐':'')+
   (p>=.6?'<div style="margin-top:10px;color:#e0561f">'+VB[rnd(VB.length)]+'</div>':'')+'</div>'+
   '<div class="grid g2"><button class="btn green" data-a="again">🔁 再玩一次</button><button class="btn blue" data-a="home">🏠 回首頁</button></div>'}
 
+/* ---------- 換個系列練練看（溫和提醒） ---------- */
+/* 只記單一系列的練習；混合多個系列記成 0。連續 3 輪（或今天這個系列 5 輪以上且佔今天大多數）都練同一個系列，
+   而且有別的系列比較不熟（或這個系列已經很熟），結算時跳出提醒。提醒後同一系列要再連練 3 輪才會再提醒。 */
+function tblScore(a){var s=0,n=0;for(var b=2;b<=9;b++){s+=level(a,b);var st=D.stats[fk(a,b)];if(st)n+=st.c+st.w}return {lv:s/8,n:n}}
+function dayKey(t){var d=new Date(t);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+function roundDone(sel,n,g){if(!sel)return;var k=sel.length===1?sel[0]:0;
+  D.hist=(D.hist||[]).concat([{k:k,t:now(),n:n||0,g:g}]).slice(-40);save();
+  setTimeout(function(){if(view==='result'||view==='tresult')nudgeCheck()},1800)}
+function nudgeInfo(){var h=D.hist||[];if(!h.length)return null;var k=h[h.length-1].k;if(!k)return null;
+  var st=0;for(var i=h.length-1;i>=0&&h[i].k===k;i--)st++;
+  var today=dayKey(now()),td=h.filter(function(x){return dayKey(x.t)===today}),tk=td.filter(function(x){return x.k===k});
+  var heavy=tk.length>=5&&tk.length>=td.length*0.7;
+  var nd=D.nudge||{};
+  /* 提醒過這個系列以後，要從那次之後再連續練 3 輪才再提醒 */
+  if(nd.k===k){var since=0;for(var j=h.length-1;j>=0&&h[j].t>nd.t&&h[j].k===k;j--)since++;if(since<3)return null}
+  if(st<3&&!heavy)return null;
+  var me=tblScore(k),others=[];for(var a=2;a<=9;a++)if(a!==k){var sc=tblScore(a);others.push({a:a,lv:sc.lv,n:sc.n,r:Math.random()})}
+  others.sort(function(x,y){return x.lv-y.lv||x.n-y.n||x.r-y.r});
+  var mastered=me.lv>=3.5;if(!mastered&&!(others[0].lv<me.lv))return null;
+  return {k:k,streak:st,today:tk.length,mastered:mastered,rec:others.slice(0,2).map(function(o){return o.a})}}
+var NUDGE_HEAD=['🏐 換個位置試試看！','🏐 教練有話要說！','🏐 來點新的發球吧！'];
+function nudgeCheck(){var x=nudgeInfo();if(!x||$('#nudge'))return false;
+  D.nudge={k:x.k,t:now()};save();
+  var rec=x.rec.map(function(a){return ZD[a]+'的乘法'}).join('」和「');
+  var why=x.mastered?'「'+ZD[x.k]+'的乘法」你已經練得超熟了！⭐':'你已經'+(x.streak>=3?'連續練了 '+x.streak+' 輪':'今天練了 '+x.today+' 輪')+'「'+ZD[x.k]+'的乘法」，好認真！💪';
+  var tip=['就像排球隊每個位置都要練，換練「'+rec+'」，你會變得更強喔！','厲害的選手什麼球都接得到！去挑戰「'+rec+'」吧！','換「'+rec+'」上場，讓九九乘法全部都變成你的拿手好球！'][rnd(3)];
+  var o=document.createElement('div');o.id='nudge';o.className='ov';
+  o.innerHTML='<div class="card mid pop" style="max-width:560px;line-height:1.5"><div style="font-size:64px">🏐</div><div style="font-size:32px;font-weight:900;color:#e0561f">'+NUDGE_HEAD[rnd(NUDGE_HEAD.length)]+'</div>'+
+  '<div style="font-size:24px;margin:10px 0;color:#3a2e5a">'+why+'<br>'+tip+'</div><div class="grid" style="gap:12px;margin-top:14px">'+
+  x.rec.map(function(a,i){return '<button class="btn '+(i?'blue':'green')+'" data-a="nudgego" data-n="'+a+'">🏐 去練「'+ZD[a]+'的乘法」</button>'}).join('')+
+  '<button class="btn small gray" data-a="nudgeclose" style="justify-self:center">再練一下「'+ZD[x.k]+'的乘法」</button></div></div>';
+  document.body.appendChild(o);try{sndOk()}catch(e){}return true}
+
 /* ---------- 60 秒挑戰 ---------- */
 var TM=null;
 function stopTimer(){if(TM&&TM.iv){clearInterval(TM.iv);TM.iv=null}}
-function startTimed(){G={g:'timed',pool:poolOf(D.sel),recent:[],requeue:[],i:0,types:[1]};TM={left:60,score:0,wrong:0,key:selKey(D.sel),end:now()+60000,iv:null,cd:3};view='timed';
+function startTimed(){G={g:'timed',pool:poolOf(D.sel),recent:[],requeue:[],i:0,types:[1],sel:D.sel.slice()};TM={left:60,score:0,wrong:0,key:selKey(D.sel),end:now()+60000,iv:null,cd:3};view='timed';
   app.innerHTML=topbar(false)+'<div class="hero pop" id="cd">3</div><div class="mid">準備好了嗎？'+esc(selName(D.sel))+'</div>';
   sndTick();var iv=setInterval(function(){if(view!=='timed'){clearInterval(iv);return}TM.cd--;
     if(TM.cd>0){$('#cd').textContent=TM.cd;sndTick()}else{clearInterval(iv);TM.end=now()+60000;TM.iv=setInterval(tick,200);tQ()}},800)}
@@ -510,7 +543,7 @@ function tCheck(){var f=G.f;
   else{rec(f.a,f.b,false);TM.wrong++;sndNo();G.locked=true;$('#hint').textContent='答案是 '+G.target+'（'+kj(f.a,f.b)+'）';
     setTimeout(function(){if(view==='timed'&&TM.iv)tQ()},1300)}}
 function timedEnd(){var old=D.best[TM.key]||0,nb=TM.score>old,gain=Math.floor(TM.score/3);
-  if(nb)D.best[TM.key]=TM.score;D.stars+=gain;save();view='tresult';sndWin();setTimeout(function(){if(view==='tresult')sp(C(nb?'record':'timeup'))},700);confetti(nb?220:120);
+  if(nb)D.best[TM.key]=TM.score;D.stars+=gain;save();view='tresult';roundDone(G.sel,TM.score+TM.wrong,'timed');sndWin();setTimeout(function(){if(view==='tresult')sp(C(nb?'record':'timeup'))},700);confetti(nb?220:120);
   app.innerHTML=topbar(false)+'<div class="hero pop">'+(nb?'🏆':'⏱️')+'</div><h1>'+(nb?'新紀錄！':'時間到！')+'</h1>'+
   '<div class="card mid" style="font-size:30px">'+esc(selName(D.sel))+'<br>60 秒答對 <b style="font-size:44px;color:#1f9d55">'+TM.score+'</b> 題'+(TM.wrong?'，答錯 '+TM.wrong+' 題':'')+
   '<br>最佳紀錄：<b>'+Math.max(old,TM.score)+'</b> 題'+(gain?'<br>獲得 ⭐ '+gain:'')+'<div style="margin-top:10px;color:#e0561f">'+(nb?'飛吧！你又變強了！🏐':VB[rnd(VB.length)])+'</div></div>'+
@@ -681,6 +714,8 @@ function load2(){var b=blank();for(var k in b)if(D[k]===undefined)D[k]=b[k];if(!
 document.addEventListener('click',function(e){
   var el=e.target.closest('[data-a]');if(!el)return;var a=el.dataset.a;ac();
   switch(a){
+    case 'nudgego':{var nn=$('#nudge');if(nn)nn.remove();D.sel=[+el.dataset.n];save();var gg=G&&G.g;if(gg==='timed')startTimed();else startQuiz(gg&&gg!=='timed'?gg:'mix');break}
+    case 'nudgeclose':{var nc=$('#nudge');if(nc)nc.remove();break}
     case 'closenotice':$('#notice').style.display='none';break;
     case 'home':go('home');break;
     case 'learn':L={shown:0,play:false,cur:0};go('learn');break;
@@ -747,7 +782,7 @@ document.addEventListener('keydown',function(e){if((view==='quiz'&&G&&G.types[G.
   if(/^[0-9]$/.test(k))(view==='timed'?tKey:onKey)(k);else if(k==='Backspace')(view==='timed'?tKey:onKey)('del');else if(k==='Enter')(view==='timed'?tKey:onKey)('ok')}});
 window.addEventListener('resize',function(){var c=$('#fx');c.width=innerWidth;c.height=innerHeight;if(view==='chart')chFit()});
 
-window.__times={kj:kj,kjSay:kjSay,zhNum:zhNum,eqSpeech:eqSpeech,level:level,DR:DR,D:function(){return D},G:function(){return G},startQuiz:startQuiz,go:go};
+window.__times={nudgeInfo:nudgeInfo,nudgeCheck:nudgeCheck,roundDone:roundDone,kj:kj,kjSay:kjSay,zhNum:zhNum,eqSpeech:eqSpeech,level:level,DR:DR,D:function(){return D},G:function(){return G},startQuiz:startQuiz,go:go};
 load();render();
 setTimeout(function(){voicePrefetch(curVoice())},3000);
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
