@@ -183,7 +183,7 @@ function hush(){spSeq++;auSeq++;try{speechSynthesis.cancel()}catch(e){}if(AU){AU
 
 /* ---------- 預錄音檔（神經語音）：優先播放，沒有就退回 iPad 內建語音 ---------- */
 var VOICES={dad:'👨 爸爸的聲音',hy:'🎀 活潑女生（曉雨）',hc:'🌸 溫柔姐姐（曉臻）',sys:'📱 iPad 內建語音'};
-var VCACHE='times-voice-v5',AU=null,auSeq=0,unlocked=false;
+var VCACHE='times-voice-v6',AU=null,auSeq=0,unlocked=false;
 function curVoice(){return VOICES[D.voice]?D.voice:'dad'}
 function auInit(){if(AU)return AU;try{AU=new Audio();AU.preload='auto';AU.preservesPitch=true;AU.webkitPreservesPitch=true}catch(e){AU=null}return AU}
 function unlock(){if(unlocked)return;var a=auInit();if(!a)return;unlocked=true; /* iOS：第一次觸控時先播一段無聲音檔，之後程式才能自己播放 */
