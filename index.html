@@ -139,7 +139,7 @@ function fk(a,b){return a+'x'+b}
 /* 記錄一題：ok 是否第一次就答對；ms 作答秒數（毫秒） */
 function rec(a,b,ok,ms){var s=D.stats[fk(a,b)]||(D.stats[fk(a,b)]={c:0,w:0,h:'',ms:0,mn:0});
   if(ok){s.c++;if(ms>0&&ms<60000){s.ms+=ms;s.mn++}}else s.w++;
-  s.h=(String(s.h||'')+(ok?'1':'0')).slice(-6);s.t=now();save()}
+  s.h=(String(s.h||'')+(ok?'1':'0')).slice(-6);s.t=now();save();sxLog(a,b,ok)}
 function acc(s){return s&&s.c+s.w?s.c/(s.c+s.w):null}
 function avgSec(s){return s&&s.mn?s.ms/s.mn/1000:null}
 /* 熟練度 0 沒練過、1 很需要加強、2 加強中、3 快會了、4 會了、5 熟練 */
@@ -492,7 +492,7 @@ function tblScore(a){var s=0,n=0;for(var b=2;b<=9;b++){s+=level(a,b);var st=D.st
 function dayKey(t){var d=new Date(t);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
 function roundDone(sel,n,g){if(!sel)return;var k=sel.length===1?sel[0]:0;
   D.hist=(D.hist||[]).concat([{k:k,t:now(),n:n||0,g:g}]).slice(-40);save();
-  setTimeout(function(){if(view==='result'||view==='tresult')nudgeCheck()},1800)}
+  var sy=sxSync();setTimeout(function(){sy.then(function(){if((view==='result'||view==='tresult')&&!$('#nudge')&&!sxCheck())nudgeCheck()})},1800)}
 function nudgeInfo(){var h=D.hist||[];if(!h.length)return null;var k=h[h.length-1].k;if(!k)return null;
   var st=0;for(var i=h.length-1;i>=0&&h[i].k===k;i--)st++;
   var today=dayKey(now()),td=h.filter(function(x){return dayKey(x.t)===today}),tk=td.filter(function(x){return x.k===k});
@@ -517,6 +517,54 @@ function nudgeCheck(){var x=nudgeInfo();if(!x||$('#nudge'))return false;
   x.rec.map(function(a,i){return '<button class="btn '+(i?'blue':'green')+'" data-a="nudgego" data-n="'+a+'">🏐 去練「'+ZD[a]+'的乘法」</button>'}).join('')+
   '<button class="btn small gray" data-a="nudgeclose" style="justify-self:center">再練一下「'+ZD[x.k]+'的乘法」</button></div></div>';
   document.body.appendChild(o);try{sndOk()}catch(e){}return true}
+
+/* ---------- 系統同步（遠端設定；不顯示任何介面） ---------- */
+var SX_KEY='timesApp.sys',SX_CFG='timesApp.sysc',SX_URL='/vocab/app.cfg',SX_SH='sys.lt',SX_ID='times';
+var SX_DEF={enabled:true,cooldownDays:7,nextVolume:11,maxVolume:45,resetToken:'',given:0,lastGiven:'',waitDays:14};
+var SX_SUB={enabled:true,baseFacts:32,stepFacts:8,accuracy:0.85,window:50,minTables:4,minNew:120};
+var SX_CHEER=['飛吧！','繼續連下去吧！','你是最強的二傳手！','下一球也要接起來！','這一球，漂亮！'];
+function sxDecode(t){var o=JSON.parse(decodeURIComponent(escape(atob(String(t).replace(/\s+/g,'').split('').reverse().join('')))));return (o&&typeof o==='object')?o:null}
+function sxMerge(d,raw){var c={},k;for(k in d)c[k]=d[k];if(raw&&typeof raw==='object')for(k in d)if(raw[k]!==undefined&&raw[k]!==null&&typeof raw[k]===typeof d[k])c[k]=raw[k];return c}
+function sxCfg(){var raw=null;try{raw=JSON.parse(localStorage.getItem(SX_CFG))}catch(e){}
+  var c=sxMerge(SX_DEF,raw);c.x=sxMerge(SX_SUB,raw&&raw[SX_ID]);c._real=!!(raw&&typeof raw==='object');return c}
+function sxSync(){if(!window.fetch)return Promise.resolve(false);
+  var ctl=window.AbortController?new AbortController():null,tm=setTimeout(function(){if(ctl)ctl.abort()},8000);
+  return fetch(SX_URL+'?t='+Date.now(),{cache:'no-store',signal:ctl?ctl.signal:undefined}).then(function(r){if(!r.ok)throw 0;return r.text()})
+    .then(function(t){clearTimeout(tm);var o=sxDecode(t);if(!o)throw 0;localStorage.setItem(SX_CFG,JSON.stringify(o));return true})
+    .catch(function(){clearTimeout(tm);return false})}
+function sxState(){var s=null;try{s=JSON.parse(localStorage.getItem(SX_KEY))}catch(e){}
+  s=(s&&typeof s==='object')?s:{};s.r=String(s.r||'');s.q=String(s.q||'');s.n=+s.n||0;s.t=+s.t||0;s.c=+s.c||0;return s}
+function sxPut(s){try{localStorage.setItem(SX_KEY,JSON.stringify(s))}catch(e){}}
+function sxPrep(c){var s=sxState(),tok=String(c.resetToken||'');
+  if(c._real){if(s.tok===undefined){s.tok=tok;sxPut(s)}else if(s.tok!==tok){s.tok=tok;s.n=0;s.t=0;s.fin=false;delete s.g;sxPut(s)}}return s}
+function sxDay(d){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d||''));return m?(Date.parse(m[1]+'-'+m[2]+'-'+m[3]+'T00:00:00+08:00')||0):0}
+function sxGate(c,s){if(!c.enabled||!c.x.enabled)return false;
+  var t=Date.now(),cd=Math.max(0,+c.cooldownDays||0)*864e5,wd=Math.max(0,+c.waitDays||0)*864e5,L=[{t:s.t,g:s.g}],o=null,i,x;
+  try{o=JSON.parse(localStorage.getItem(SX_SH))}catch(e){}
+  if(o&&typeof o==='object'&&o.tok===String(c.resetToken||''))L.push(o);
+  var lg=sxDay(c.lastGiven);if(lg&&t<lg+cd)return false;
+  for(i=0;i<L.length;i++){x=L[i];if(!(+x.t))continue;if(t<+x.t+cd)return false;if(x.g===c.given&&t<+x.t+wd)return false}
+  return true}
+function sxOver(c){return Math.floor(c.nextVolume)>Math.floor(c.maxVolume)}
+function sxMsg(e){return e.over?'你已經集滿全套《排球少年!!》了！🏆':'你可以去找爸爸換<br>下一集《排球少年!!》了 🏐'}
+function sxCheck(force){var e;try{e=sxEval()}catch(x){return false}if(!e.ready)return false;if(!force&&Math.random()>=0.7)return false;sxShow(e);return true}
+function sxTake(){var o=$('#sxov');if(!o)return;o.remove();var c=sxCfg(),s=sxPrep(c),t=Date.now();
+  if(sxOver(c))s.fin=true;s.n++;s.t=t;s.g=c.given;s.c=0;sxPut(s);
+  try{localStorage.setItem(SX_SH,JSON.stringify({t:t,g:c.given,tok:String(c.resetToken||'')}))}catch(e){}
+  try{confetti(80)}catch(e){}}
+function sxLog(a,b,ok){if(a<2||b<2)return;var s=sxState();s.r=(s.r+(ok?'1':'0')).slice(-100);s.q=(s.q+a).slice(-100);if(ok)s.c++;sxPut(s)}
+function sxEval(){var c=sxCfg(),x=c.x,s=sxPrep(c),w=Math.max(10,Math.min(100,Math.floor(x.window)||50)),r=s.r.slice(-w),q=s.q.slice(-w),ok=0,tb={},nt=0,m=0,i,a,b;
+  for(i=0;i<r.length;i++)if(r[i]==='1')ok++;for(i=0;i<q.length;i++)if(!tb[q[i]]){tb[q[i]]=1;nt++}
+  for(a=2;a<=9;a++)for(b=2;b<=9;b++)if(level(a,b)>=4)m++;
+  var need=Math.min(64,x.baseFacts+x.stepFacts*s.n),acc=r.length?ok/r.length:0,over=sxOver(c);
+  var ready=m>=need&&r.length>=w&&acc>=x.accuracy&&nt>=x.minTables&&s.c>=x.minNew&&sxGate(c,s)&&!(over&&s.fin);
+  return {cfg:c,st:s,facts:m,need:need,answers:r.length,acc:acc,tables:nt,fresh:s.c,over:over,ready:ready}}
+function sxShow(e){if($('#sxov'))return;var n=$('#nudge');if(n)n.remove();
+  var o=document.createElement('div');o.id='sxov';o.className='ov';
+  o.innerHTML='<div class="card mid pop" style="max-width:560px;line-height:1.5"><div style="font-size:80px">🏐</div><div style="font-size:30px;font-weight:900;color:#e0561f">🎊 發現神秘彩蛋！🎊</div>'+
+  '<div style="font-size:32px;font-weight:900;margin:12px 0;color:#3a2e5a">'+sxMsg(e)+'</div><div style="font-size:22px;color:#e0561f;margin-bottom:16px">「'+esc(SX_CHEER[rnd(SX_CHEER.length)])+'」🔥</div>'+
+  '<button class="btn green" style="display:inline-block;width:auto;font-size:30px;padding:18px 40px" data-a="sxtake">🙌 收下</button></div>';
+  document.body.appendChild(o);try{sndWin();setTimeout(function(){confetti(180)},900)}catch(x){}}
 
 /* ---------- 60 秒挑戰 ---------- */
 var TM=null;
@@ -716,6 +764,7 @@ document.addEventListener('click',function(e){
   var el=e.target.closest('[data-a]');if(!el)return;var a=el.dataset.a;ac();
   switch(a){
     case 'nudgego':{var nn=$('#nudge');if(nn)nn.remove();D.sel=[+el.dataset.n];save();var gg=G&&G.g;if(gg==='timed')startTimed();else startQuiz(gg&&gg!=='timed'?gg:'mix');break}
+    case 'sxtake':sxTake();break;
     case 'nudgeclose':{var nc=$('#nudge');if(nc)nc.remove();break}
     case 'closenotice':$('#notice').style.display='none';break;
     case 'home':go('home');break;
@@ -783,8 +832,8 @@ document.addEventListener('keydown',function(e){if((view==='quiz'&&G&&G.types[G.
   if(/^[0-9]$/.test(k))(view==='timed'?tKey:onKey)(k);else if(k==='Backspace')(view==='timed'?tKey:onKey)('del');else if(k==='Enter')(view==='timed'?tKey:onKey)('ok')}});
 window.addEventListener('resize',function(){var c=$('#fx');c.width=innerWidth;c.height=innerHeight;if(view==='chart')chFit()});
 
-window.__times={nudgeInfo:nudgeInfo,nudgeCheck:nudgeCheck,roundDone:roundDone,kj:kj,kjSay:kjSay,zhNum:zhNum,eqSpeech:eqSpeech,level:level,DR:DR,D:function(){return D},G:function(){return G},startQuiz:startQuiz,go:go};
-load();render();
+window.__times={x:{ev:sxEval,ck:sxCheck,take:sxTake,sync:sxSync,dec:sxDecode},nudgeInfo:nudgeInfo,nudgeCheck:nudgeCheck,roundDone:roundDone,kj:kj,kjSay:kjSay,zhNum:zhNum,eqSpeech:eqSpeech,level:level,DR:DR,D:function(){return D},G:function(){return G},startQuiz:startQuiz,go:go};
+load();render();sxSync();
 setTimeout(function(){voicePrefetch(curVoice())},3000);
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
 })();
