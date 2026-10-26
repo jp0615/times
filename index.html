@@ -742,21 +742,33 @@ function ioView(){
   app.innerHTML=topbar(true)+'<h2>📦 匯出／匯入（搬到另一台 iPad 或備份）</h2>'+
   '<div class="card"><b>匯出</b><div class="row" style="margin:10px 0"><button class="btn blue" data-a="exportfile">💾 下載 JSON 檔</button><button class="btn purple" data-a="exportcopy">📋 複製文字代碼</button></div>'+
   '<textarea id="code" readonly placeholder="按「複製文字代碼」後會顯示在這裡"></textarea></div>'+
-  '<div class="card"><b>匯入</b><p class="mid" style="text-align:left;font-size:20px">選擇 JSON 檔，或把文字代碼貼到下面。「合併」會保留兩邊練習比較多的紀錄。</p>'+
+  '<div class="card"><b>匯入</b><p class="mid" style="text-align:left;font-size:20px">選擇 JSON 檔，或把文字代碼貼到下面。代碼裡有答題紀錄、⭐星星、最佳紀錄和練習歷程。「合併」會保留兩邊練習比較多的紀錄，星星取比較多的那邊。</p>'+
   '<input type="file" id="file" accept=".json,application/json,text/plain" style="font-size:18px;margin-bottom:10px">'+
   '<textarea id="paste" placeholder="在此貼上文字代碼"></textarea>'+
   '<div class="row" style="margin-top:10px"><button class="btn green" data-a="import" data-m="merge">合併匯入</button><button class="btn red" data-a="import" data-m="replace">取代全部資料</button></div></div>'}
-function exportText(){return JSON.stringify({app:'times',exported:new Date().toISOString(),data:D})}
+/* 匯出：學習資料全部帶走（答題紀錄、星星、最佳紀錄、練習歷程、換練提醒、設定）；不含系統同步狀態與聲音快取 */
+function exportText(){var d={},k;for(k in D)if(k!=='vc')d[k]=D[k];return JSON.stringify({app:'times',fmt:2,exported:new Date().toISOString(),data:d})}
+function tPick(a,b){if(!a)return b;if(!b)return a;var na=a.c+a.w,nb=b.c+b.w;if(nb!==na)return nb>na?b:a;return (b.t||0)>(a.t||0)?b:a}
+function cleanHist(h){return (Array.isArray(h)?h:[]).filter(function(x){return x&&typeof x==='object'&&+x.t}).map(function(x){return {k:+x.k||0,t:+x.t,n:+x.n||0,g:x.g}})}
+var T_PREF=['sel','slow','autoSay','sound','hwOcr','penOnly','voice','learnA','learnMode','chMode','chCover','chDots','dadV'];
 function doImport(txt,mode){var o;try{o=JSON.parse(String(txt).trim())}catch(e){toast('格式不正確，請確認內容完整');return}
   if(o&&o.app==='times'&&o.data)o=o.data;
   if(!o||typeof o.stats!=='object'||o.stats===null){toast('這不是九九乘法的資料');return}
   var okKey=/^[1-9]x[1-9]$/,clean={};Object.keys(o.stats).forEach(function(k){var s=o.stats[k];if(okKey.test(k)&&s&&typeof s==='object')clean[k]={c:+s.c||0,w:+s.w||0,h:String(s.h||'').replace(/[^01]/g,'').slice(-6),ms:+s.ms||0,mn:+s.mn||0,t:+s.t||0}});
+  var hasStars=o.stars!==undefined,inStars=Math.max(0,Math.floor(+o.stars||0)),ih=cleanHist(o.hist),bb=(o.best&&typeof o.best==='object')?o.best:{};
   if(mode==='replace'){if(!confirm('確定要用匯入的資料取代目前全部資料嗎？'))return;
-    var keep=blank();keep.stats=clean;keep.stars=+o.stars||0;keep.best=(o.best&&typeof o.best==='object')?o.best:{};
-    ['sel','slow','autoSay','sound','hwOcr','penOnly','voice'].forEach(function(k){if(o[k]!==undefined)keep[k]=o[k]});D=keep}
-  else{Object.keys(clean).forEach(function(k){var a=D.stats[k],b=clean[k];if(!a||(b.c+b.w)>(a.c+a.w))D.stats[k]=b});
-    D.stars=Math.max(D.stars,+o.stars||0);var bb=o.best||{};Object.keys(bb).forEach(function(k){if(/^[1-9]+$/.test(k))D.best[k]=Math.max(D.best[k]||0,+bb[k]||0)})}
-  load2();save();toast('匯入成功！');go('home')}
+    var keep=blank();keep.stats=clean;keep.stars=inStars;keep.best={};Object.keys(bb).forEach(function(k){if(/^[1-9]+$/.test(k))keep.best[k]=+bb[k]||0});
+    keep.hist=ih.slice(-40);if(o.nudge&&typeof o.nudge==='object')keep.nudge=o.nudge;keep.vc=D.vc||{};
+    T_PREF.forEach(function(k){if(o[k]!==undefined)keep[k]=o[k]});D=keep}
+  else{Object.keys(clean).forEach(function(k){D.stats[k]=tPick(D.stats[k],clean[k])});
+    D.stars=Math.max(+D.stars||0,inStars);Object.keys(bb).forEach(function(k){if(/^[1-9]+$/.test(k))D.best[k]=Math.max(D.best[k]||0,+bb[k]||0)});
+    var seen={},all=cleanHist(D.hist).concat(ih).filter(function(x){var id=x.t+'|'+x.k;if(seen[id])return false;seen[id]=1;return true});
+    all.sort(function(x,y){return x.t-y.t});D.hist=all.slice(-40);
+    if(o.nudge&&typeof o.nudge==='object'&&(+o.nudge.t||0)>(+(D.nudge||{}).t||0))D.nudge=o.nudge}
+  load2();save();go('home');
+  var n=0;for(var k in D.stats){var s=D.stats[k];if(s.c+s.w)n++}
+  notice((mode==='replace'?'✅ 已取代成匯入的資料':'✅ 合併匯入完成')+'<br>'+n+' 題的答題紀錄<br>'+(hasStars?'⭐ 星星：現在共 '+D.stars+' 顆':'⭐ 星星維持 '+D.stars+' 顆'));
+  toast('已匯入 '+n+' 題紀錄、⭐ '+D.stars+' 顆星星')}
 function load2(){var b=blank();for(var k in b)if(D[k]===undefined)D[k]=b[k];if(!Array.isArray(D.sel))D.sel=[];D.sel=D.sel.filter(function(x){return x>=2&&x<=9});if(!D.sel.length)D.sel=b.sel.slice()}
 
 /* ---------- 事件 ---------- */
