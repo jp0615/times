@@ -1010,7 +1010,7 @@ document.addEventListener('click',function(e){
     case 'cell':cellInfo(+el.dataset.n,+el.dataset.m);break;
     case 'testvoice':sp(C('test'));break;
     case 'voice':D.voice=el.dataset.v;save();sp(C('test'));voicePrefetch(D.voice,function(ok){if(view==='heat')heat(true)});heat(true);break;
-    case 'resetstats':if(confirm('確定清除所有答題紀錄、最佳紀錄與星星？')){D.stats={};D.best={};D.stars=0;delete D.vb;vlInit();save();heat()}break;
+    case 'resetstats':if(confirm('確定清除所有答題紀錄、最佳紀錄與星星？\n（🏐 球隊、獎牌和隊員會保留）')){D.stats={};D.best={};D.stars=0;vlInit();save();heat()}break;
     case 'exportfile':{var blob=new Blob([exportText()],{type:'application/json'}),u=URL.createObjectURL(blob),l=document.createElement('a');
       l.href=u;l.download='times-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(l);l.click();l.remove();
       setTimeout(function(){URL.revokeObjectURL(u)},4000);toast('若沒有下載，請改用「複製文字代碼」');break}
