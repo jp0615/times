@@ -132,6 +132,23 @@ textarea{width:100%;font-size:18px;padding:12px;border:3px solid #ffd2a8;border-
 .cstage{position:absolute;left:0;right:0;bottom:1px;text-align:center;font-size:12px;color:#7a4a12;font-weight:800;pointer-events:none}
 .court.slim{height:40px;margin:0 0 6px}.court.slim .cteam{flex-direction:row;gap:6px;border-radius:12px}.court.slim .cteam b{font-size:13px}.court.slim .cteam span{font-size:22px}.court.slim .copp{font-size:20px;bottom:3px}.court.slim .cball{width:20px;height:20px;margin:-10px 0 0 -10px}.court.slim .cmsg{font-size:15px;top:2px}.court.slim .cmsg.big{font-size:18px}.court.slim .cstage{display:none}
 .bump{animation:pop .45s}
+.cdk{position:absolute;z-index:1;pointer-events:none;display:block}.cdk svg{width:100%;height:100%;display:block}
+.cdf{left:2px;top:1px;width:24px;height:24px}.cdm{left:1px;bottom:1px;width:30px;height:30px}.cdc{left:36%;bottom:13px;width:32px;height:32px}
+.cdd{left:34%;top:-3px;width:30px;height:30px}.cdd.bunt{left:0;right:0;top:0;width:auto;height:12px}
+.court.slim .cdk{display:none}
+.vlscene{width:100%;height:auto;display:block;margin-top:8px;border-radius:18px}
+.shhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:4px 0}
+.shbal{background:#fff;border-radius:22px;padding:6px 18px;font-size:22px;color:#6a5d94;box-shadow:0 4px 0 #ffb800;text-align:center;line-height:1.25}
+.shbal b{color:#e08a00;font-size:28px}.shbal small{display:block;font-size:15px;color:#9a8aa8}
+.shtip{font-size:17px;color:#6a5d94;margin-top:6px;text-align:center}
+.shgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:10px}
+.shit{background:#fff;border-radius:18px;padding:10px 8px;text-align:center;box-shadow:0 4px 0 rgba(0,0,0,.08);border:3px solid #eee;display:flex;flex-direction:column;align-items:center;gap:2px}
+.shit.own{border-color:#9fd0ff}.shit.on{border-color:#38c172;background:#f0fff5}.shit.lock .shart{filter:grayscale(1);opacity:.45}
+.shart{height:76px;display:flex;align-items:center;justify-content:center}
+.shit b{font-size:19px}.shit small{font-size:15px;color:#b07a00;font-weight:800}
+.shit .btn{width:100%;margin-top:4px;font-size:17px;padding:8px 8px}
+.shlock,.shneed{font-size:15px;color:#8e8aa5;padding:9px 0 4px;font-weight:700}
+.btn.shop{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#ff8fb8}.btn.shop small{font-size:17px;opacity:.95;margin-top:2px}
 .vlhome{display:flex;align-items:center;justify-content:center;gap:10px;font-size:20px;color:#6a5d94;margin-top:4px}
 .vlcard{background:linear-gradient(135deg,#fff,#eef3ff);border:3px solid #5a6bd8;border-radius:22px;padding:12px 16px;margin:10px 0;font-size:22px;line-height:1.5;text-align:center}
 .vlcard .ev{font-weight:900;color:#e0561f;font-size:24px}
@@ -200,12 +217,12 @@ function now(){return Date.now()}
 
 /* ---------- 資料 ---------- */
 var D;
-function blank(){return {v:1,stars:0,stats:{},best:{},sel:[2,3,4,5,6,7,8,9],slow:false,autoSay:true,sound:true,hwOcr:true,penOnly:false,learnA:2,learnMode:'kj',voice:'dad',vc:{}}}
+function blank(){return {v:1,stars:0,shop:{o:{},p:{}},stats:{},best:{},sel:[2,3,4,5,6,7,8,9],slow:false,autoSay:true,sound:true,hwOcr:true,penOnly:false,learnA:2,learnMode:'kj',voice:'dad',vc:{}}}
 function load(){var b=blank(),o=null;try{o=JSON.parse(localStorage.getItem(KEY))}catch(e){}
   D=(o&&typeof o==='object')?o:b;for(var k in b)if(D[k]===undefined)D[k]=b[k];
   if(!Array.isArray(D.sel)||!D.sel.length)D.sel=b.sel.slice();
   if(!D.dadV){D.dadV=1;D.voice='dad'} /* 改用爸爸的聲音當預設（只切換一次，之後尊重選擇） */
-  D.sel=D.sel.filter(function(a){return a>=2&&a<=9});if(!D.sel.length)D.sel=b.sel.slice();vlInit()} /* 練習不出 1 的乘法 */
+  D.sel=D.sel.filter(function(a){return a>=2&&a<=9});if(!D.sel.length)D.sel=b.sel.slice();D.shop=shNorm(D.shop);vlInit()} /* 練習不出 1 的乘法 */
 function save(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){toast('儲存失敗，請檢查儲存空間')}}
 function fk(a,b){return a+'x'+b}
 /* 記錄一題：ok 是否第一次就答對；ms 作答秒數（毫秒） */
@@ -337,7 +354,7 @@ function render(){
   document.body.classList.toggle('wide',view==='chart');
   if(view==='chart'){chart();window.scrollTo(0,0);return}
   if(view==='home')home();else if(view==='learn')learn();else if(view==='menu')menu();
-  else if(view==='quiz')quizQ();else if(view==='result')result();else if(view==='heat')heat();else if(view==='io')ioView();else if(view==='team')teamView();
+  else if(view==='quiz')quizQ();else if(view==='result')result();else if(view==='heat')heat();else if(view==='io')ioView();else if(view==='team')teamView();else if(view==='shop')shopView();
   window.scrollTo(0,0)}
 function home(){
   var m=0,t=0;for(var a=2;a<=9;a++)for(var b=2;b<=9;b++){t++;if(level(a,b)>=4)m++}
@@ -348,6 +365,7 @@ function home(){
   '<button class="btn green" style="font-size:32px;padding:32px" data-a="menu">🎮 開始挑戰</button>'+
   '<button class="btn teal" style="font-size:30px;padding:22px" data-a="chart">🗂️ 九九乘法總表</button>'+
   '<button class="btn" style="font-size:30px;padding:22px;background:#5a6bd8" data-a="team">🏐 我的球隊</button>'+
+  shBtn('grid-column:1/-1;font-size:28px;padding:16px')+
   '<button class="btn orange" style="font-size:30px;padding:26px" data-a="timedgo">⏱️ 60 秒挑戰</button>'+
   '<button class="btn purple" style="font-size:30px;padding:26px" data-a="heat">📊 熟練度表</button>'+
   '<button class="btn yellow" data-a="io">📦 匯出／匯入</button>'+
@@ -656,10 +674,10 @@ function vlMiss(a,b){if(!D.vb||!G||G.fix||a<2||b<2)return;var R=vlRound();R.stre
 var VL_BALL='<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="#fff" stroke="#2b4a9a" stroke-width="2.5"/><path d="M20 2c-6 8-6 18 0 26M4 14c9 2 18 0 26-8M8 32c4-9 13-14 26-12" fill="none" stroke="#ffb800" stroke-width="3"/><path d="M20 28c5 4 10 5 16 2" fill="none" stroke="#2b8cff" stroke-width="3"/></svg>';
 function vlKid(x,col,flip){return '<g transform="translate('+x+',0)'+(flip?' scale(-1,1)':'')+'"><circle cx="0" cy="38" r="6" fill="#ffd9b8" stroke="#3a2e5a" stroke-width="1.5"/><path d="M-7 46h14l2 14h-18z" fill="'+col+'" stroke="#3a2e5a" stroke-width="1.5"/><path d="M-5 60v10M5 60v10" stroke="#3a2e5a" stroke-width="3" stroke-linecap="round"/><path d="M6 48l8-10" stroke="#ffd9b8" stroke-width="3.5" stroke-linecap="round"/></g>'}
 function vlCourt(){if(!D.vb)return '';var v=D.vb,o=vlOpp();
-  return '<div class="court'+(G&&G.types&&G.types[G.i]==='write'?' slim':'')+'" id="court"><div class="cteam us"><b>'+esc(v.team)+'</b><span id="cu">'+v.s.u+'</span></div>'+
+  return '<div class="court'+(G&&G.types&&G.types[G.i]==='write'?' slim':'')+'" id="court"><div class="cteam us" style="border-color:'+shCol()+'"><b>'+esc(v.team)+'</b><span id="cu">'+v.s.u+'</span></div>'+
   '<div class="cfield"><svg class="cbg" viewBox="0 0 300 76" preserveAspectRatio="none" aria-hidden="true"><path d="M6 72H294" stroke="#fff" stroke-width="3"/><path d="M100 50v22M200 50v22" stroke="#fff" stroke-width="2" stroke-dasharray="4 4"/>'+
   '<rect x="147" y="18" width="6" height="54" fill="#fff" opacity=".9"/><path d="M146 18h8v20h-8z" fill="none" stroke="#3a2e5a" stroke-width="1.2"/><path d="M146 23h8M146 28h8M146 33h8" stroke="#3a2e5a" stroke-width=".8"/>'+
-  vlKid(40,'#ff8a1f')+vlKid(85,'#ff8a1f')+'</svg><div class="copp">'+o[0]+'</div><div class="cball" id="cball">'+VL_BALL+'</div><div class="cmsg" id="cmsg"></div><div class="cstage">'+esc(vlMatchName())+'・先到 '+vlTarget()+' 分</div></div>'+
+  vlKid(40,shCol())+vlKid(85,shCol())+'</svg>'+vlCourtDeco()+'<div class="copp">'+o[0]+'</div><div class="cball" id="cball">'+VL_BALL+'</div><div class="cmsg" id="cmsg"></div><div class="cstage">'+esc(vlMatchName())+'・先到 '+vlTarget()+' 分</div></div>'+
   '<div class="cteam them"><b>'+o[1]+'</b><span id="co">'+v.s.o+'</span></div></div>'}
 function sndSpike(){tone(140,0,.12,'square',.12);tone(980,.05,.1,'triangle',.18);tone(1480,.12,.18,'triangle',.18)}
 /* 結算卡片：這一輪的比賽結果、晉級、新隊友 */
@@ -676,6 +694,100 @@ function vlResultCard(){var R=G&&G.vl;if(!D.vb)return '';var h='<div class="vlca
   var o=vlOpp();h+='<div>下一場：'+esc(vlMatchName())+'　對手 '+o[0]+' '+o[1]+'<br><b>'+esc(D.vb.team)+' '+D.vb.s.u+' : '+D.vb.s.o+'</b>（先到 '+vlTarget()+' 分）</div>';
   var nt=vlNeedText();if(nt)h+='<div style="font-size:19px;color:#6a5d94">'+nt+'</div>';
   return h+'<button class="btn small blue" style="margin-top:8px" data-a="team">🏐 我的球隊</button></div>'}
+/* ---------- 🛍️ 星星小舖（用星星換球隊的裝備和主場佈置；不影響星星、紀錄、比賽或任何其他功能） ---------- */
+var SHOP=[
+ {id:'jsky',c:'j',n:'天空藍球衣',p:30,col:'#3b9cff'},{id:'jpink',c:'j',n:'草莓粉球衣',p:30,col:'#ff6fa3'},{id:'jmint',c:'j',n:'薄荷綠球衣',p:40,col:'#22b98f'},
+ {id:'jpurple',c:'j',n:'星空紫球衣',p:60,col:'#8a5cf6'},{id:'jgold',c:'j',n:'金色冠軍球衣',p:300,col:'#f2b705',u:'md'},
+ {id:'fstar',c:'f',n:'星星隊旗',p:50},{id:'fheart',c:'f',n:'愛心隊旗',p:50},{id:'frain',c:'f',n:'彩虹隊旗',p:120,u:1},
+ {id:'dball',c:'d',n:'氣球拱門',p:80},{id:'dbunt',c:'d',n:'彩色小旗串',p:90},
+ {id:'cpom',c:'c',n:'彩球啦啦隊',p:150,u:1},{id:'cdrum',c:'c',n:'大鼓應援團',p:220,u:2},
+ {id:'mcat',c:'m',n:'吉祥物 球球貓',p:250,u:1},{id:'mdino',c:'m',n:'吉祥物 小恐龍',p:350,u:2}];
+var SH_CAT=[['j','👕 球衣顏色','穿在你和場上的隊友身上'],['f','🚩 隊旗','掛在主場和比賽球場'],['d','🎈 球場佈置','讓主場更熱鬧'],['c','📣 啦啦隊','幫你們加油'],['m','🐾 吉祥物','陪你們一起比賽']];
+/* ---- ⭐ 星星小舖共用核心（三個 App 同一份）：D.stars 永遠是「總共拿過」的星星，買東西不會扣它；
+   可用星星＝總共拿過－買過的東西加起來的價錢（k:1＝重設前就買好、已經付清的，不再算）。
+   合併匯入：買過的東西取聯集，可用星星重新算，不會因為匯入變多；擺設用本機的（本機沒擺才用匯入的） ---- */
+var SHI={};SHOP.forEach(function(it){SHI[it.id]=it});
+function shPClean(p,o){var r={},used={};if(!p||typeof p!=='object')return r;
+  Object.keys(p).forEach(function(k){var id=p[k];if(typeof id!=='string'||!o[id]||used[id]||!shSlotOk(k,id))return;used[id]=1;r[k]=id});return r}
+function shNorm(s){var r={o:{},p:{}};if(!s||typeof s!=='object')return r;var o=(s.o&&typeof s.o==='object')?s.o:{};
+  Object.keys(o).forEach(function(id){if(!SHI.hasOwnProperty(id))return;var x=o[id]||{},t=Math.max(1,Math.floor(+x.t||0)||1);r.o[id]=x.k?{t:t,k:1}:{t:t}});
+  r.p=shPClean(s.p,r.o);return r}
+function shSpent(s){s=s||D.shop;var n=0;for(var id in s.o)if(!s.o[id].k)n+=SHI[id].p;return n}
+function shBal(){return Math.max(0,(+D.stars||0)-shSpent())}
+function shOwn(id){return !!(D.shop&&D.shop.o[id])}
+function shNOwn(){return Object.keys(D.shop.o).length}
+function shCan(id){var it=SHI[id];return !!it&&!shOwn(id)&&shUnl(it)&&shBal()>=it.p}
+function shBuy(id){if(!shCan(id))return false;D.shop.o[id]={t:Date.now()};save();return true}
+function shPaid(){for(var id in D.shop.o)D.shop.o[id].k=1}
+function shMerge(a,b){a=shNorm(a);b=shNorm(b);var o={},id;for(id in a.o)o[id]=a.o[id];
+  for(id in b.o){var x=b.o[id],y=o[id];o[id]=!y?x:(x.k&&y.k?{t:Math.min(x.t,y.t),k:1}:{t:Math.min(x.t,y.t)})}
+  return {o:o,p:shPClean(Object.keys(a.p).length?a.p:b.p,o)}}
+/* ---- 星星小舖核心結束 ---- */
+
+function shUnl(it){if(it.u==null)return true;var v=D.vb||{};if(it.u==='md')return !!(v.md&&v.md[0]);return (v.st|0)>=it.u}
+function shLockTxt(it){return it.u==='md'?'🔒 拿到第一面冠軍獎牌就能買':'🔒 晉級「'+VL_ST[it.u].n+'」就能買'}
+function shSlotOk(k,id){return !!SHI[id]&&SHI[id].c===k}
+function shCol(){var id=D.shop&&D.shop.p.j;return id&&SHI[id]?SHI[id].col:'#ff8a1f'}
+/* 原創圖（都畫在 60×60 的格子裡） */
+var TO=' stroke="#3a2e5a" stroke-width="2" stroke-linejoin="round"';
+function shArt(id){
+  if(id==='fstar'||id==='fheart'||id==='frain'){var f=id==='frain'?'#fff':id==='fstar'?'#3b6cff':'#ff6fa3',h='<rect x="7" y="4" width="4.5" height="54" rx="2.2" fill="#c9a26b"'+TO+'/><circle cx="9.2" cy="5" r="3.6" fill="#ffd23f"'+TO+'/><path d="M12 9c12-5 20 5 34 0v26c-14 5-22-5-34 0z" fill="'+f+'"'+TO+'/>';
+    if(id==='fstar')h+='<path d="M29 13l2.6 5.6 6 .6-4.5 4 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.5-4 6-.6z" fill="#ffd23f" stroke="#3a2e5a" stroke-width="1.2" stroke-linejoin="round"/>';
+    else if(id==='fheart')h+='<path d="M29 31c-7-5-10-8-10-12a5 5 0 0 1 10-1 5 5 0 0 1 10 1c0 4-3 7-10 12z" fill="#fff" stroke="#3a2e5a" stroke-width="1.2"/>';
+    else h+=['#ff5a7a','#ffb23f','#ffe14d','#3fcf7a','#3b9cff'].map(function(c,i){return '<path d="M12.5 '+(10+i*5)+'c12-5 20 5 33 0v5c-13 5-21-5-33 0z" fill="'+c+'"/>'}).join('')+'<path d="M12 9c12-5 20 5 34 0v26c-14 5-22-5-34 0z" fill="none"'+TO+'/>';
+    return h}
+  if(id==='dball'){var c=['#ff6fa3','#ffd23f','#3b9cff','#3fcf7a','#a46bff','#ff8a1f','#ff6fa3','#ffd23f','#3b9cff'],h2='';
+    for(var i=0;i<9;i++){var a=Math.PI*(1-i/8),x=30+24*Math.cos(a),y=34-24*Math.sin(a);h2+='<ellipse cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" rx="6.2" ry="7" fill="'+c[i]+'" stroke="#3a2e5a" stroke-width="1.4"/><circle cx="'+(x-2).toFixed(1)+'" cy="'+(y-2.5).toFixed(1)+'" r="1.6" fill="#fff" opacity=".8"/>'}
+    return h2+'<path d="M6 40v16M54 40v16" stroke="#3a2e5a" stroke-width="2.4" stroke-linecap="round"/>'}
+  if(id==='dbunt'){var cs=['#ff5a7a','#ffd23f','#3b9cff','#3fcf7a','#a46bff'],h3='<path d="M2 12q28 16 56 0" fill="none" stroke="#3a2e5a" stroke-width="1.8"/>';
+    for(var j=0;j<6;j++){var x0=4+j*9,y0=12+Math.sin((j+.5)/6*Math.PI)*8;h3+='<path d="M'+x0+' '+y0.toFixed(1)+'h8l-4 11z" fill="'+cs[j%5]+'" stroke="#3a2e5a" stroke-width="1.2" stroke-linejoin="round"/>'}
+    return h3+'<path d="M2 32q28 16 56 0" fill="none" stroke="#3a2e5a" stroke-width="1.8"/>'+[0,1,2,3,4,5].map(function(j){var x0=4+j*9,y0=32+Math.sin((j+.5)/6*Math.PI)*8;return '<path d="M'+x0+' '+y0.toFixed(1)+'h8l-4 11z" fill="'+cs[(j+2)%5]+'" stroke="#3a2e5a" stroke-width="1.2" stroke-linejoin="round"/>'}).join('')}
+  if(id==='cpom'){var kid=function(x,col,up){return '<circle cx="'+x+'" cy="22" r="7" fill="#ffd9b8"'+TO+'/><path d="M'+(x-7)+' 31h14l3 16h-20z" fill="'+col+'"'+TO+'/><path d="M'+(x-4)+' 47v9M'+(x+4)+' 47v9" stroke="#3a2e5a" stroke-width="3" stroke-linecap="round"/><path d="M'+(x-6)+' 33l-7 '+(up?-12:-6)+'M'+(x+6)+' 33l7 '+(up?-6:-12)+'" stroke="#ffd9b8" stroke-width="3.5" stroke-linecap="round"/><circle cx="'+(x-14)+'" cy="'+(up?19:25)+'" r="5.5" fill="#ffd23f"'+TO+'/><circle cx="'+(x+14)+'" cy="'+(up?25:19)+'" r="5.5" fill="#ffd23f"'+TO+'/><path d="M'+(x-7)+' 19q7-9 14 0" fill="#7a4a2a"/>'};
+    return kid(18,'#ff6fa3',1)+kid(43,'#3b9cff',0)}
+  if(id==='cdrum')return '<rect x="4" y="4" width="52" height="15" rx="5" fill="#fff4c2"'+TO+'/><text x="30" y="16" text-anchor="middle" font-size="11" font-weight="900" fill="#e0561f">加油！</text><circle cx="18" cy="27" r="6.5" fill="#ffd9b8"'+TO+'/><path d="M11 35h14l2 13H9z" fill="#22b98f"'+TO+'/><path d="M14 48v8M22 48v8" stroke="#3a2e5a" stroke-width="3" stroke-linecap="round"/><ellipse cx="42" cy="44" rx="12" ry="11" fill="#ff5a7a"'+TO+'/><ellipse cx="42" cy="40" rx="12" ry="5" fill="#fff"'+TO+'/><path d="M31 46l22 0" stroke="#ffd23f" stroke-width="2"/><path d="M24 36l14-6" stroke="#c9a26b" stroke-width="3" stroke-linecap="round"/><circle cx="38.5" cy="30" r="2.6" fill="#ff8a1f"/>';
+  if(id==='mcat')return '<path d="M14 22l3-14 9 8zM46 22l-3-14-9 8z" fill="#ffb86b"'+TO+'/><ellipse cx="30" cy="44" rx="17" ry="14" fill="#ffb86b"'+TO+'/><circle cx="30" cy="25" r="15" fill="#ffc98a"'+TO+'/><path d="M17 20q4-3 6 1M43 20q-4-3-6 1" stroke="#e8893a" stroke-width="2.4" fill="none" stroke-linecap="round"/><circle cx="24" cy="25" r="2.4" fill="#3a2e5a"/><circle cx="36" cy="25" r="2.4" fill="#3a2e5a"/><path d="M28 30q2 2 4 0" stroke="#3a2e5a" stroke-width="1.6" fill="none"/><circle cx="20" cy="30" r="2.6" fill="#ff9aa8" opacity=".8"/><circle cx="40" cy="30" r="2.6" fill="#ff9aa8" opacity=".8"/><path d="M12 28h6M42 28h6" stroke="#3a2e5a" stroke-width="1.2"/><circle cx="30" cy="46" r="9" fill="#fff" stroke="#2b4a9a" stroke-width="1.8"/><path d="M30 37c-3 4-3 9 0 13M22 43c4 1 9 0 13-4M24 52c2-4 6-6 13-5" fill="none" stroke="#ffb800" stroke-width="1.8"/>';
+  if(id==='mdino')return '<path d="M22 12l4-6 3 6 4-5 2 7 4-3v8z" fill="#ffd23f"'+TO+'/><path d="M46 44q12 2 12-8q-4 6-12 2z" fill="#6fd38a"'+TO+'/><ellipse cx="32" cy="42" rx="16" ry="15" fill="#6fd38a"'+TO+'/><ellipse cx="32" cy="46" rx="9" ry="9" fill="#d8f7c8"/><circle cx="29" cy="22" r="13" fill="#6fd38a"'+TO+'/><circle cx="24" cy="21" r="2.4" fill="#3a2e5a"/><circle cx="33" cy="21" r="2.4" fill="#3a2e5a"/><path d="M25 27q4 3 8 0" stroke="#3a2e5a" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="20" cy="26" r="2.4" fill="#ff9aa8" opacity=".8"/><path d="M24 56v3M38 56v3" stroke="#3a2e5a" stroke-width="4" stroke-linecap="round"/>';
+  return ''}
+function shIcon(it,sz){sz=sz||72;if(it.c==='j')return vlJersey(it.col,1).replace('width="78" height="70"','width="'+sz+'" height="'+Math.round(sz*70/78)+'"');return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 60 60" aria-hidden="true">'+shArt(it.id)+'</svg>'}
+/* 🏟️ 我的主場：把買到、選好的東西都畫在一起 */
+function shG(id,x,y,s){return id?'<g transform="translate('+x+' '+y+') scale('+(s||1)+')">'+shArt(id)+'</g>':''}
+function vlScene(){var p=D.shop.p,col=shCol();
+  var h='<svg class="vlscene" viewBox="0 0 320 170" aria-hidden="true"><defs><linearGradient id="vsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe3ff"/><stop offset="1" stop-color="#eef7ff"/></linearGradient></defs><rect width="320" height="170" rx="18" fill="url(#vsky)"/>'+
+  '<rect x="0" y="46" width="320" height="40" fill="#c7cff5"/>'+[52,64,76].map(function(y,r){var s='';for(var x=8+r*5;x<320;x+=15)s+='<circle cx="'+x+'" cy="'+y+'" r="4" fill="'+['#ff9aa8','#ffd23f','#9fd0ff','#b9e6a8','#d7b8ff'][(x+r)%5]+'" opacity=".9"/>';return s}).join('')+
+  '<path d="M0 86h320v70a14 14 0 0 1-14 14H14A14 14 0 0 1 0 156z" fill="#ffc977"/><path d="M14 160H306M90 120v40M230 120v40" stroke="#fff" stroke-width="2.5"/><rect x="157" y="88" width="6" height="66" fill="#fff"/><path d="M156 88h8v24h-8z" fill="none" stroke="#3a2e5a" stroke-width="1.2"/><path d="M156 94h8M156 100h8M156 106h8" stroke="#3a2e5a" stroke-width=".8"/>';
+  if(p.d==='dbunt')h+=shG('dbunt',0,-2,2.7).replace('scale(2.7)','scale(5.33 .8)');
+  if(p.d==='dball')h+=shG('dball',262,40,1)+shG('dball',-2,40,1);
+  h+=shG(p.f,8,62,1.15);
+  h+='<g transform="translate(-42 40) scale(1.4)">'+vlKid(100,col)+vlKid(125,col)+'</g>';
+  h+=shG(p.m,176,106,1)+shG(p.c,240,98,1.25);
+  return h+'</svg>'}
+/* 比賽球場上的小佈置（窄的時候只留球衣顏色） */
+function vlCourtDeco(){var p=D.shop.p,h='';
+  if(p.d)h+='<i class="cdk cdd'+(p.d==='dbunt'?' bunt':'')+'">'+(p.d==='dbunt'?'<svg viewBox="0 0 60 20" preserveAspectRatio="none">'+shArt('dbunt')+'</svg>':'<svg viewBox="0 0 60 60">'+shArt('dball')+'</svg>')+'</i>';
+  if(p.f)h+='<i class="cdk cdf"><svg viewBox="0 0 60 60">'+shArt(p.f)+'</svg></i>';
+  if(p.c)h+='<i class="cdk cdc"><svg viewBox="0 0 60 60">'+shArt(p.c)+'</svg></i>';
+  if(p.m)h+='<i class="cdk cdm"><svg viewBox="0 0 60 60">'+shArt(p.m)+'</svg></i>';
+  return h}
+var SHASK=null;
+function shBalHTML(){return '<div class="shbal">可以用 <b>⭐ '+shBal()+'</b> 顆<small>總共拿過 ⭐ '+(+D.stars||0)+' 顆</small></div>'}
+function shBtn(st){return '<button class="btn shop" data-a="shop"'+(st?' style="'+st+'"':'')+'>🛍️ 星星小舖<small>可以用 ⭐ '+shBal()+' 顆</small></button>'}
+function shopView(){var bal=shBal(),p=D.shop.p;
+  var h=topbar(true)+'<div class="shhead"><h2 style="margin:0">🛍️ 星星小舖</h2>'+shBalHTML()+'</div>'+
+  '<div class="card shscene"><b style="font-size:22px">🏟️ '+esc(D.vb?D.vb.team:'')+'的主場</b>'+vlScene()+'<div class="shtip">買了以後點「換上」就會出現在主場和比賽球場上；買東西不會讓「總共拿過」的星星變少喔</div></div>';
+  SH_CAT.forEach(function(cat){h+='<div class="card"><b style="font-size:24px">'+cat[1]+'</b>　<span style="font-size:17px;color:#6a5d94">'+cat[2]+'</span><div class="shgrid">';
+    SHOP.forEach(function(it){if(it.c!==cat[0])return;var own=shOwn(it.id),unl=shUnl(it),on=p[it.c]===it.id,b;
+      if(own)b=on?'<button class="btn small gray" data-a="shuse" data-id="'+it.id+'">✔ 使用中・換下來</button>':'<button class="btn small blue" data-a="shuse" data-id="'+it.id+'">'+(it.c==='j'?'👕 穿上':'✨ 換上')+'</button>';
+      else if(!unl)b='<div class="shlock">'+shLockTxt(it)+'</div>';
+      else if(bal<it.p)b='<div class="shneed">還差 ⭐ '+(it.p-bal)+' 顆</div>';
+      else b='<button class="btn small '+(SHASK===it.id?'green':'yellow')+'" data-a="shbuy" data-id="'+it.id+'">'+(SHASK===it.id?'✅ 確定要買':'⭐ '+it.p+' 買')+'</button>';
+      h+='<div class="shit'+(own?' own':'')+(on?' on':'')+(!unl&&!own?' lock':'')+'"><div class="shart">'+shIcon(it)+'</div><b>'+it.n+'</b><small>⭐ '+it.p+'</small>'+b+'</div>'});
+    h+='</div></div>'});
+  app.innerHTML=h+'<div class="mid" style="font-size:18px">練習時第一次就答對會拿到星星 ⭐，60 秒挑戰也有喔！</div><div class="grid g2" style="margin-top:12px"><button class="btn" style="background:#5a6bd8" data-a="team">🏐 我的球隊</button><button class="btn blue" data-a="home">🏠 回首頁</button></div>'}
+function shAct(a,el){var id=el.getAttribute('data-id');
+  if(a==='shop'){SHASK=null;go('shop');return}
+  if(a==='shbuy'){if(SHASK!==id){SHASK=id;try{sndTap()}catch(e){}shopView();return}SHASK=null;
+    if(shBuy(id)){D.shop.p[SHI[id].c]=id;save();try{sndWin()}catch(e){}confetti(80);toast('買到「'+SHI[id].n+'」了！已經換上囉');var y=window.scrollY;shopView();window.scrollTo(0,y)}else{toast('星星還不夠喔');shopView()}return}
+  if(a==='shuse'){SHASK=null;var it=SHI[id];if(!it||!shOwn(id))return;if(D.shop.p[it.c]===id)delete D.shop.p[it.c];else D.shop.p[it.c]=id;save();try{sndTap()}catch(e){}var y2=window.scrollY;shopView();window.scrollTo(0,y2)}}
 /* 🏐 我的球隊 */
 function vlJersey(col,num,lock){return '<svg width="78" height="70" viewBox="0 0 78 70" aria-hidden="true"><path d="M24 4l-20 12 8 16 8-4v38h38V28l8 4 8-16-20-12c-2 6-8 9-15 9s-13-3-15-9z" fill="'+(lock?'#d9d4e6':col)+'" stroke="#3a2e5a" stroke-width="2.5" stroke-linejoin="round"/><path d="M24 4c2 6 8 9 15 9s13-3 15-9" fill="none" stroke="#fff" stroke-width="3"/><text x="39" y="54" text-anchor="middle" font-size="26" font-weight="900" fill="#fff" stroke="#3a2e5a" stroke-width="1" font-family="Arial Rounded MT Bold,Arial,sans-serif">'+(lock?'?':num)+'</text></svg>'}
 function vlMedal(i,on){var c=VL_MEDAL[i];if(i===3)return '<svg width="64" height="70" viewBox="0 0 64 70" aria-hidden="true"><path d="M16 6h32v14c0 12-7 20-16 20S16 32 16 20z" fill="'+c[1]+'" stroke="'+c[0]+'" stroke-width="3"/><path d="M16 12H6c0 10 5 14 11 15M48 12h10c0 10-5 14-11 15" fill="none" stroke="'+c[0]+'" stroke-width="3"/><rect x="28" y="40" width="8" height="12" fill="'+c[0]+'"/><rect x="18" y="52" width="28" height="10" rx="3" fill="'+c[0]+'"/><circle cx="32" cy="20" r="6" fill="#fff" opacity=".7"/></svg>';
@@ -684,12 +796,13 @@ function teamView(){var v=D.vb;vlRefresh(null);save();var n=vlTablesDone(),o=vlO
   var h=topbar(true)+'<div class="vlhead"><h2 style="flex:1">🏐 我的球隊：'+esc(v.team)+'</h2><input id="vlname" maxlength="8" value="'+esc(v.team)+'" aria-label="隊名"><button class="btn small orange" data-a="vlname">✏️ 改隊名</button></div>'+
   '<div class="vlcard"><div class="ev">現在：'+esc(vlMatchName())+'</div>對手 '+o[0]+' '+o[1]+'　<b>'+esc(v.team)+' '+v.s.u+' : '+v.s.o+'</b>（先到 '+vlTarget()+' 分）<br>'+
   '<span style="font-size:18px;color:#6a5d94">第一次就答對就得分：2～5 的乘法 1 分、6～9 的乘法 2 分，一次練 3 個以上乘法表再多 1 分</span>'+(vlNeedText()?'<br><span style="font-size:19px">'+vlNeedText()+'</span>':'')+'</div>';
+  h+='<div class="card shscene"><b style="font-size:24px">🏟️ 我的主場</b>'+vlScene()+shBtn('width:100%;margin-top:10px')+'</div>';
   h+='<div class="card"><b style="font-size:24px">🏆 賽程</b><div class="ladder" style="margin-top:8px">';
   for(var i=0;i<4;i++){var S=VL_ST[i],cur=i===v.st,dn=!!v.md[i],lock=i>v.st;
     h+='<div class="lstep'+(cur?' cur':dn?' done':lock?' lock':'')+'">'+vlMedal(i,dn)+'<span class="nm">'+S.n+'</span><span class="ops">'+S.o.map(function(x,j){return '<span class="'+(j<v.w[i]?'w':'')+'" title="'+x[1]+'">'+x[0]+'</span>'}).join('')+'</span>'+
     '<span class="st">'+(dn?(i===3?'👑 全國冠軍！'+(v.cw>1?'（衛冕 '+(v.cw-1)+' 次）':''):'✅ 拿到冠軍獎牌')+(cur&&i<3?'・等待晉級':''):cur?'🔥 進行中：已經贏 '+v.w[i]+' / 3 場':lock?'🔒 要練熟 '+S.need+' 個乘法表才能參加（現在 '+n+' 個）':'')+'</span></div>'}
   h+='</div></div><div class="card"><b style="font-size:24px">👕 隊員</b>　<span style="font-size:18px;color:#6a5d94">每練熟一個乘法表（8 題裡至少 6 題「會了」），就有一位新隊友加入</span><div class="roster" style="margin-top:10px">'+
-  '<div class="pcard" style="border-color:#ff8a1f">'+vlJersey('#ff8a1f',1)+'<b>你</b><small>隊長</small></div>';
+  '<div class="pcard" style="border-color:'+shCol()+'">'+vlJersey(shCol(),1)+'<b>你</b><small>隊長</small></div>';
   for(var a=2;a<=9;a++){var p=VL_PL[a],on=!!v.pl[a],f=vlTblFacts(a);
     h+='<div class="pcard'+(on?'':' lock')+'" style="'+(on?'border-color:'+CH_COL[a]:'')+'">'+vlJersey(CH_COL[a],a,!on)+'<b>'+(on?p[0]:'？？？')+'</b><small>'+p[1]+'</small><small>'+(on?ZD[a]+'的乘法 ✔':'練熟「'+ZD[a]+'的乘法」')+'</small>'+(on?'':'<div class="pb"><i style="width:'+Math.min(100,f/6*100)+'%"></i></div>')+'</div>'}
   h+='</div></div><div class="card"><b style="font-size:24px">🏅 獎牌櫃</b>　<span style="font-size:18px;color:#6a5d94">一共贏了 '+v.tw+' 場比賽</span><div class="shelf" style="margin-top:10px">';
@@ -1015,7 +1128,7 @@ function ioView(){
   app.innerHTML=topbar(true)+'<h2>📦 匯出／匯入（搬到另一台 iPad 或備份）</h2>'+
   '<div class="card"><b>匯出</b><div class="row" style="margin:10px 0"><button class="btn blue" data-a="exportfile">💾 下載 JSON 檔</button><button class="btn purple" data-a="exportcopy">📋 複製文字代碼</button></div>'+
   '<textarea id="code" readonly placeholder="按「複製文字代碼」後會顯示在這裡"></textarea></div>'+
-  '<div class="card"><b>匯入</b><p class="mid" style="text-align:left;font-size:20px">選擇 JSON 檔，或把文字代碼貼到下面。代碼裡有答題紀錄、⭐星星、最佳紀錄、練習歷程、🏐球隊進度和特訓場的練習球。「合併」會保留兩邊練習比較多的紀錄，星星取比較多的那邊，球隊進度取比較前面的那邊，特訓場的球兩邊合在一起。</p>'+
+  '<div class="card"><b>匯入</b><p class="mid" style="text-align:left;font-size:20px">選擇 JSON 檔，或把文字代碼貼到下面。代碼裡有答題紀錄、⭐星星、最佳紀錄、練習歷程、🏐球隊進度、特訓場的練習球和🛍️星星小舖買的東西。「合併」會保留兩邊練習比較多的紀錄，星星取比較多的那邊，球隊進度取比較前面的那邊，特訓場的球兩邊合在一起，星星小舖買過的東西兩邊都留下（可以用的星星會重新算）。</p>'+
   '<input type="file" id="file" accept=".json,application/json,text/plain" style="font-size:18px;margin-bottom:10px">'+
   '<textarea id="paste" placeholder="在此貼上文字代碼"></textarea>'+
   '<div class="row" style="margin-top:10px"><button class="btn green" data-a="import" data-m="merge">合併匯入</button><button class="btn red" data-a="import" data-m="replace">取代全部資料</button></div></div>'}
@@ -1032,14 +1145,14 @@ function doImport(txt,mode){var o;try{o=JSON.parse(String(txt).trim())}catch(e){
   if(mode==='replace'){if(!confirm('確定要用匯入的資料取代目前全部資料嗎？'))return;
     var keep=blank();keep.stats=clean;keep.stars=inStars;keep.best={};Object.keys(bb).forEach(function(k){if(/^[1-9]+$/.test(k))keep.best[k]=+bb[k]||0});
     keep.hist=ih.slice(-40);if(o.nudge&&typeof o.nudge==='object')keep.nudge=o.nudge;keep.vc=D.vc||{};
-    T_PREF.forEach(function(k){if(o[k]!==undefined)keep[k]=o[k]});keep.vb=vlNorm(o.vb);keep.fx=fkClean(o.fx);keep.fxv=1;D=keep}
+    T_PREF.forEach(function(k){if(o[k]!==undefined)keep[k]=o[k]});keep.vb=vlNorm(o.vb);keep.fx=fkClean(o.fx);keep.fxv=1;keep.shop=shNorm(o.shop);D=keep}
   else{Object.keys(clean).forEach(function(k){D.stats[k]=tPick(D.stats[k],clean[k])});
     D.stars=Math.max(+D.stars||0,inStars);Object.keys(bb).forEach(function(k){if(/^[1-9]+$/.test(k))D.best[k]=Math.max(D.best[k]||0,+bb[k]||0)});
     var seen={},all=cleanHist(D.hist).concat(ih).filter(function(x){var id=x.t+'|'+x.k;if(seen[id])return false;seen[id]=1;return true});
     all.sort(function(x,y){return x.t-y.t});D.hist=all.slice(-40);
     if(o.nudge&&typeof o.nudge==='object'&&(+o.nudge.t||0)>(+(D.nudge||{}).t||0))D.nudge=o.nudge;
-    D.vb=vlMerge(D.vb,o.vb);D.fx=fkMerge(D.fx,o.fx)}
-  load2();D.fx=fkClean(D.fx);fxL();fxSeed();save();go('home');
+    D.vb=vlMerge(D.vb,o.vb);D.fx=fkMerge(D.fx,o.fx);D.shop=shMerge(D.shop,o.shop)}
+  load2();D.shop=shNorm(D.shop);SHASK=null;D.fx=fkClean(D.fx);fxL();fxSeed();save();go('home');
   var n=0;for(var k in D.stats){var s=D.stats[k];if(s.c+s.w)n++}
   notice((mode==='replace'?'✅ 已取代成匯入的資料':'✅ 合併匯入完成')+'<br>'+n+' 題的答題紀錄<br>'+(hasStars?'⭐ 星星：現在共 '+D.stars+' 顆':'⭐ 星星維持 '+D.stars+' 顆')+(D.vb?'<br>🏐 球隊：'+esc(D.vb.team)+'・'+esc(vlMatchName()):''));
   toast('已匯入 '+n+' 題紀錄、⭐ '+D.stars+' 顆星星')}
@@ -1064,6 +1177,7 @@ document.addEventListener('click',function(e){
     case 'menu':go('menu');break;
     case 'heat':hush();view='heat';heat(!!el.dataset.s);window.scrollTo(0,0);break;
     case 'io':go('io');break;
+    case 'shop':case 'shbuy':case 'shuse':shAct(a,el);break;
     case 'team':{var ov=$('#nudge');if(ov)ov.remove();go('team');break}
     case 'vlname':vlSetName();break;
     case 'lsel':hush();D.learnA=+el.dataset.n;save();L={shown:0,play:false,cur:0};learn();break;
@@ -1099,7 +1213,7 @@ document.addEventListener('click',function(e){
     case 'cell':cellInfo(+el.dataset.n,+el.dataset.m);break;
     case 'testvoice':sp(C('test'));break;
     case 'voice':D.voice=el.dataset.v;save();sp(C('test'));voicePrefetch(D.voice,function(ok){if(view==='heat')heat(true)});heat(true);break;
-    case 'resetstats':if(confirm('確定清除所有答題紀錄、最佳紀錄、星星和特訓場的練習球？\n（🏐 球隊、獎牌和隊員會保留）')){D.stats={};D.best={};D.stars=0;D.fx={};D.fxv=1;vlInit();save();heat()}break;
+    case 'resetstats':if(confirm('確定清除所有答題紀錄、最佳紀錄、星星和特訓場的練習球？\n（🏐 球隊、獎牌、隊員和星星小舖買的東西會保留）')){D.stats={};D.best={};D.stars=0;shPaid();D.fx={};D.fxv=1;vlInit();save();heat()}break;
     case 'exportfile':{var blob=new Blob([exportText()],{type:'application/json'}),u=URL.createObjectURL(blob),l=document.createElement('a');
       l.href=u;l.download='times-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(l);l.click();l.remove();
       setTimeout(function(){URL.revokeObjectURL(u)},4000);toast('若沒有下載，請改用「複製文字代碼」');break}
