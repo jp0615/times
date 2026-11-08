@@ -272,7 +272,7 @@ function hush(){spSeq++;auSeq++;try{speechSynthesis.cancel()}catch(e){}if(AU){AU
 
 /* ---------- 預錄音檔（神經語音）：優先播放，沒有就退回 iPad 內建語音 ---------- */
 var VOICES={dad:'👨 爸爸的聲音',hy:'🎀 活潑女生（曉雨）',hc:'🌸 溫柔姐姐（曉臻）',sys:'📱 iPad 內建語音'};
-var VCACHE='times-voice-v7',AU=null,auSeq=0,unlocked=false;
+var VCACHE='times-voice-v8',AU=null,auSeq=0,unlocked=false;
 function curVoice(){return VOICES[D.voice]?D.voice:'dad'}
 function auInit(){if(AU)return AU;try{AU=new Audio();AU.preload='auto';AU.preservesPitch=true;AU.webkitPreservesPitch=true}catch(e){AU=null}return AU}
 function unlock(){if(unlocked)return;var a=auInit();if(!a)return;unlocked=true; /* iOS：第一次觸控時先播一段無聲音檔，之後程式才能自己播放 */
@@ -489,12 +489,18 @@ function qHead(){return topbar(false).replace('<span></span>','<button class="bt
 function nextFact(){
   var f;if(G.fix)f=G.fq[G.i];else if(G.requeue.length&&G.requeue[0].at<=G.i)f=G.requeue.shift().f;else f=pickFact(G.pool,G.recent);
   G.recent.push(fk(f.a,f.b));if(G.recent.length>4)G.recent.shift();return f}
+/* 交換律練習：只練某些乘法表時，約 35% 的題目（5×5 這種不換）把順序反過來出（練 5 的乘法也會看到 7 × 5）。
+   畫面、語音、提示都照顯示的順序；統計、特訓場、球賽、隱藏獎勵都記在正在練的那一題（5×7），算在 5 的乘法。 */
+var REV_P=0.4;
+function revF(f,sel){var a=f.a,b=f.b;if(a===b||a<2||b<2||!sel||sel.indexOf(b)>=0||Math.random()>=REV_P)return f;return {a:b,b:a,ka:a,kb:b}}
+function KA(f){return f.ka||f.a}
+function KB(f){return f.kb||f.b}
 function sayBtn(){return '<button class="spk" data-a="qsay">🔊</button>'}
 function quizQ(){
   if(G.i>=G.types.length)return finish();
   var t=G.types[G.i];G.locked=false;G.tried=0;G.t0=now();hush();
   if(t==='match')return matchQ();
-  var f=nextFact();G.f=f;G.miss=false;
+  var f=nextFact();if(!G.fix&&t!=='pattern')f=revF(f,G.sel);G.f=f;G.miss=false;
   var a=f.a,b=f.b,p=a*b,h=qHead();
   if(t==='choice'){
     G.opts=shuffle([p].concat(distract(a,b)));
@@ -528,10 +534,10 @@ function showHint(){var f=G.f,el=$('#hint');if(!el)return;
   el.textContent=t==='pattern'?'提示：每次多 '+f.a+' 喔！':'💡 口訣：'+kj(f.a,f.b);if(G.tried>=2)el.innerHTML+=dotHint(f.a,f.b);
   el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
   speakSeq([C(G.tried>1?'try2':'try1'),t==='pattern'?P(f.a):K(f.a,f.b)])}
-function wrongOnce(){if(!G.tried){rec(G.f.a,G.f.b,false);if(!G.fix)G.requeue.push({f:G.f,at:G.i+3});vlMiss(G.f.a,G.f.b)}G.tried++}
+function wrongOnce(){var a=KA(G.f),b=KB(G.f);if(!G.tried){rec(a,b,false);if(!G.fix)G.requeue.push({f:{a:a,b:b},at:G.i+3});vlMiss(a,b)}G.tried++}
 function right(){
   var first=!G.tried,ms=now()-G.t0;
-  if(first){rec(G.f.a,G.f.b,true,ms);G.first++;G.gained++;D.stars++;save();vlHit(G.f.a,G.f.b)}
+  if(first){rec(KA(G.f),KB(G.f),true,ms);G.first++;G.gained++;D.stars++;save();vlHit(KA(G.f),KB(G.f))}
   sndOk();confetti(first?70:30);var pw=praise(),m=$('#msg');if(m){m.textContent=pw;m.classList.add('pop');if(G.fix)m.insertAdjacentHTML('afterend',fxAnim(G.f,first))}
   var f=G.f,g=G,list=[K(f.a,f.b)];if(/^飛吧/.test(pw))list.unshift(C('fly'));else if(first&&Math.random()<0.35)list.unshift(C(['ok1','ok2','ok3'][rnd(3)]));
   G.i++;var t0=now(),gone=false;function nx(){if(gone)return;gone=true;if(view==='quiz'&&G===g)quizQ()}
@@ -553,9 +559,9 @@ function fillCheck(){
 function matchQ(){var used={},fs=[],tries=0;
   while(fs.length<4&&tries++<200){var f=pickFact(G.pool,fs.map(function(x){return fk(x.a,x.b)}));if(!used[f.a*f.b]){used[f.a*f.b]=1;fs.push(f)}}
   var cards=[];fs.forEach(function(f,i){cards.push({id:i,f:f,side:'eq'});cards.push({id:i,f:f,side:'p'})});
-  G.m={cards:shuffle(cards),open:[],done:0,total:fs.length,bad:{}};matchDraw()}
+  G.m={cards:shuffle(cards),open:[],done:0,total:fs.length,bad:{},seen:{}};matchDraw()}
 function matchDraw(){var m=G.m;
-  app.innerHTML=qHead()+'<div class="mid">翻翻看：把算式和答案配成一對</div><div class="mgrid">'+m.cards.map(function(c,i){
+  app.innerHTML=qHead()+'<div class="mid">翻翻看：把算式和答案配成一對<br><small style="color:#6a5d94">第一次翻開的牌不會讓對手得分，記住位置就好！</small></div><div class="mgrid">'+m.cards.map(function(c,i){
     var up=m.open.indexOf(i)>=0||c.done,txt=c.side==='eq'?c.f.a+' × '+c.f.b:String(c.f.a*c.f.b);
     return '<button class="mcard'+(up?' up':'')+(c.side==='eq'?' eq':'')+(c.done?' done':'')+'" data-a="flip" data-i="'+i+'">'+(up?txt:'🏐')+'</button>'}).join('')+'</div><div class="msg" id="msg"></div>'}
 function onFlip(i){var m=G.m,c=m.cards[i];if(G.locked||c.done||m.open.indexOf(i)>=0)return;
@@ -565,8 +571,17 @@ function onFlip(i){var m=G.m,c=m.cards[i];if(G.locked||c.done||m.open.indexOf(i)
       var hit=!m.bad[a.id];if(hit){rec(a.f.a,a.f.b,true);D.stars++;G.gained++;save()}
       sndOk();confetti(30);G.locked=false;matchDraw();if(hit)vlHit(a.f.a,a.f.b);$('#msg').textContent=praise();sp(K(a.f.a,a.f.b));
       if(m.done===m.total){G.locked=true;G.first++;G.i++;sndWin();confetti(100);setTimeout(function(){if(view==='quiz')quizQ()},1800)}}
-    else{sndNo();[a,b].forEach(function(x){if(x.side==='eq'&&!m.bad[x.id]){m.bad[x.id]=1;rec(x.f.a,x.f.b,false);vlMiss(x.f.a,x.f.b)}});
-      $('#msg').textContent=tryag();setTimeout(function(){m.open=[];G.locked=false;if(view==='quiz')matchDraw()},900)}}}
+    else{var sl=matchSlip(m,m.open[0]);
+      if(sl){sndNo();m.bad[a.id]=1;vlMiss(a.f.a,a.f.b);$('#msg').textContent='剛剛翻過它的好朋友喔，想想在哪裡？';}
+      else{sndTap();$('#msg').textContent=MATCH_LOOK[rnd(MATCH_LOOK.length)]}
+      m.seen[m.open[0]]=m.seen[m.open[1]]=1;
+      setTimeout(function(){m.open=[];G.locked=false;if(view==='quiz')matchDraw()},900)}}}
+/* 翻牌計分：記憶遊戲一開始一定會翻錯，所以「還沒看過的牌」翻錯不算。
+   只有第一張牌的另一半「之前已經翻開看過」卻沒配對到（真的忘記了），對手才得 1 分；每一對最多 1 次，
+   這一對之後配成功也不加我方分數和星星。翻牌是記憶的錯，不算乘法答錯，所以不記進統計、也不進特訓場。 */
+var MATCH_LOOK=['記住它們的位置喔！🧠','先看看，記起來！👀','沒關係，再翻翻看！'];
+function matchSlip(m,i){var c=m.cards[i];if(m.bad[c.id])return false;
+  for(var j=0;j<m.cards.length;j++)if(j!==i&&m.cards[j].id===c.id)return !!m.seen[j];return false}
 
 function finish(){var n=G.types.length,bonus=0;if(G.fix){save();view='result';sndWin();confetti(120);render();setTimeout(function(){if(view==='result')sp(C('great'))},900);return}vlRefresh(vlRound().ev);
   if(G.first===n&&n>=3){bonus=3;D.stars+=3;G.gained+=3}
@@ -613,7 +628,7 @@ function nudgeCheck(){var x=nudgeInfo();if(!x||$('#nudge'))return false;
 
 /* ---------- 🏐 排球比賽（每天看得到的獎勵層；與隱藏彩蛋、星星、統計無關） ---------- */
 /* 規則：第一次就答對＝我方得分（2～5 的乘法 1 分、6～9 的乘法 2 分；3 個以上乘法表混合再 +1；×1 一律 0 分）；
-   第一次答錯＝對手得 1 分。先到目標分數就贏這場比賽。每個賽事 3 場，贏滿 3 場拿獎牌；
+   第一次答錯＝對手得 1 分（翻牌配對只有「看過的牌卻忘了」才算，見 matchSlip）。先到目標分數就贏這場比賽。每個賽事 3 場，贏滿 3 場拿獎牌；
    要晉級下一個賽事，還要練熟足夠多個乘法表（某個乘法表 8 題中至少 6 題「會了」以上＝練熟）。 */
 var VL_DEF_TEAM='小達人隊';
 var VL_ST=[{n:'校內練習賽',t:15,need:0,o:[['🐦','小麻雀隊'],['🐰','跳跳兔隊'],['🐿️','松鼠隊']]},
@@ -962,7 +977,7 @@ function startTimed(){G={g:'timed',pool:poolOf(D.sel),recent:[],requeue:[],i:0,t
 function tick(){if(view!=='timed'){stopTimer();return}var l=Math.max(0,Math.ceil((TM.end-now())/1000));
   if(l!==TM.left){TM.left=l;var e=$('#tleft');if(e)e.textContent=l;if(l<=5&&l>0)sndTick()}
   if(now()>=TM.end){stopTimer();timedEnd()}}
-function tQ(){var f=pickFact(G.pool,G.recent);G.recent.push(fk(f.a,f.b));if(G.recent.length>4)G.recent.shift();
+function tQ(){var f=pickFact(G.pool,G.recent);G.recent.push(fk(f.a,f.b));if(G.recent.length>4)G.recent.shift();f=revF(f,G.sel);
   G.f=f;G.inp='';G.target=f.a*f.b;G.miss=false;G.locked=false;G.t0=now();
   app.innerHTML='<div class="top"><button class="btn small gray" data-a="quit">✕ 結束</button><div class="stars">✅ '+TM.score+'</div></div>'+
   '<div class="timer">⏱️ <span id="tleft">'+TM.left+'</span></div><div class="q" id="qline"></div><div class="hint" id="hint"></div>'+padHtml()+'<div class="msg" id="msg"></div>';
@@ -973,9 +988,9 @@ function tKey(k){if(G.locked)return;
   if(G.inp.length>=2)return;G.inp+=k;sndTap();fillDraw();
   if(+G.inp===G.target||G.inp.length>=2)tCheck()}
 function tCheck(){var f=G.f;
-  if(+G.inp===G.target){rec(f.a,f.b,true,now()-G.t0);vlHit(f.a,f.b);TM.score++;sndOk();G.locked=true;fillDraw(true);
+  if(+G.inp===G.target){rec(KA(f),KB(f),true,now()-G.t0);vlHit(KA(f),KB(f));TM.score++;sndOk();G.locked=true;fillDraw(true);
     if(TM.score%5===0)confetti(40);setTimeout(function(){if(view==='timed'&&TM.iv)tQ()},280)}
-  else{rec(f.a,f.b,false);vlMiss(f.a,f.b);TM.wrong++;sndNo();G.locked=true;$('#hint').textContent='答案是 '+G.target+'（'+kj(f.a,f.b)+'）';
+  else{rec(KA(f),KB(f),false);vlMiss(KA(f),KB(f));TM.wrong++;sndNo();G.locked=true;$('#hint').textContent='答案是 '+G.target+'（'+kj(f.a,f.b)+'）';
     setTimeout(function(){if(view==='timed'&&TM.iv)tQ()},1300)}}
 function timedEnd(){var old=D.best[TM.key]||0,nb=TM.score>old,gain=Math.floor(TM.score/3);
   if(nb)D.best[TM.key]=TM.score;D.stars+=gain;vlRefresh(vlRound().ev);save();view='tresult';roundDone(G.sel,TM.score+TM.wrong,'timed');sndWin();setTimeout(function(){if(view==='tresult')sp(C(nb?'record':'timeup'))},700);confetti(nb?220:120);
