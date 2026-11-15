@@ -178,6 +178,8 @@ textarea{width:100%;font-size:18px;padding:12px;border:3px solid #ffd2a8;border-
 .fxt{display:flex;flex-direction:column;gap:2px}.fxt b{font-size:30px;font-weight:900}.fxt small{font-size:20px;opacity:.95}
 .fxballs{display:flex;gap:4px;align-items:center;margin-top:4px}.fxballs i{width:24px;height:24px;display:inline-block;animation:fxbob 1.6s ease-in-out infinite}.fxballs i svg{width:100%;height:100%}.fxballs b{font-size:18px}
 @keyframes fxbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.fxspot{position:relative}.fxspot.idle{background:linear-gradient(135deg,#7f9fd8,#9fb6e6);box-shadow:0 6px 0 #5d79b0}
+.fxc{position:relative}.fxbadge{position:absolute;top:-8px;right:-10px;min-width:32px;height:32px;border-radius:16px;background:#ef4b5f;color:#fff;font-size:20px;line-height:28px;text-align:center;border:3px solid #fff;padding:0 5px;font-weight:900}
 .fxdone{margin-top:16px;padding:14px;border-radius:20px;background:#eef3ff;border:3px dashed #5a8cff;color:#2b4a9a;font-size:22px;font-weight:800;text-align:center}
 .fxbar{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#fff,#eef3ff);border:3px solid #5a8cff;border-radius:20px;padding:6px 14px;margin:8px 0;font-size:22px;color:#2b4a9a}
 .fxbar .fxc{width:48px;height:48px}.fxcnt{margin-left:auto;font-weight:800;white-space:nowrap}
@@ -941,12 +943,12 @@ function fxPlan(){return fxInfo().due.slice(0,FX_ROUND).map(function(k){var p=k.
 var FX_COACH='<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="34" r="20" fill="#ffd9b8" stroke="#3a2e5a" stroke-width="2.5"/><path d="M12 30c0-12 9-19 20-19s20 7 20 19z" fill="#2b6cd8" stroke="#3a2e5a" stroke-width="2.5" stroke-linejoin="round"/><path d="M40 28h20c0 4-3 6-8 6H40z" fill="#2b6cd8" stroke="#3a2e5a" stroke-width="2.5" stroke-linejoin="round"/><circle cx="32" cy="14" r="3" fill="#ffb800"/><circle cx="25" cy="38" r="2.6" fill="#3a2e5a"/><circle cx="39" cy="38" r="2.6" fill="#3a2e5a"/><path d="M26 46q6 5 12 0" fill="none" stroke="#3a2e5a" stroke-width="2.5" stroke-linecap="round"/><path d="M20 50l-6 10" stroke="#e0561f" stroke-width="2.5"/><rect x="8" y="58" width="10" height="5" rx="2.5" fill="#c0c7d6" stroke="#3a2e5a" stroke-width="1.5"/></svg>';
 function fxBalls(n){var h='';for(var i=0;i<Math.min(n,8);i++)h+='<i style="animation-delay:'+(i*0.12).toFixed(2)+'s">'+VL_BALL+'</i>';return h+(n>8?'<b>+'+(n-8)+'</b>':'')}
 /* 首頁入口 */
+/* 首頁固定的位置：特訓場一直在這裡（右上角的數字＝今天可以練的球；今天練對、還沒練成的＝明天再來） */
 function fxEntry(){fxSeed();var f=fxInfo(),n=f.due.length;
-  if(n)return '<button class="fxbtn" data-a="fix"><span class="fxc">'+FX_COACH+'</span><span class="fxt"><b>🏐 特訓場</b><small>教練準備了 '+n+' 顆練習球</small><span class="fxballs">'+fxBalls(n)+'</span></span></button>';
-  if(f.done)return '<div class="fxdone">🌙 今天特訓過 '+f.done+' 球了，明天再來接一次，就練成了！</div>';
-  return ''}
+  return '<button class="fxbtn fxspot'+(n?'':' idle')+'" data-a="fix"><span class="fxc">'+FX_COACH+(n?'<b class="fxbadge">'+n+'</b>':'')+'</span><span class="fxt"><b>🏐 特訓場</b><small>'+
+    (n?'教練準備了 '+n+' 顆練習球'+(f.done?'・🌙 明天再來 '+f.done+' 球':''):f.done?'🌙 今天特訓過 '+f.done+' 球了，明天再來接一次就練成了！':'目前沒有練習球，答錯的球會放到這裡')+'</small>'+(n?'<span class="fxballs">'+fxBalls(n)+'</span>':'')+'</span></button>'}
 var FX_SAY=['這一球我們再練一次！','慢慢來，看清楚再接！','你一定接得到！','把這一球接起來吧！','深呼吸，準備好了嗎？'];
-function startFix(){fxSeed();var plan=fxPlan();if(!plan.length){toast('特訓場的球都練好了 🏐');go('home');return}
+function startFix(){fxSeed();var plan=fxPlan();if(!plan.length){toast(fxInfo().done?'今天特訓過了，明天再來接一次 🌙':'特訓場的球都練好了 🏐');go('home');return}
   G={g:'fix',fix:true,pool:plan,fq:plan,types:plan.map(function(f,i){return i%2?'fill':'choice'}),i:0,first:0,gained:0,recent:[],requeue:[],locked:false,sel:[],fres:{}};
   view='quiz';quizQ()}
 function fxBar(){return '<div class="fxbar"><span class="fxc">'+FX_COACH+'</span><span><b>🧢 教練：</b>'+FX_SAY[G.i%FX_SAY.length]+'</span><span class="fxcnt">🏐 第 '+(G.i+1)+' / '+G.types.length+' 球</span></div>'}
